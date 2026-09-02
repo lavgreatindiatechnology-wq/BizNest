@@ -1,0 +1,17 @@
+IMPORTANT:
+Extract this ZIP first.
+Open the BizNest-GitHub-Ready folder.
+Upload ALL files and folders inside it to the ROOT of your GitHub repository.
+
+GitHub must show:
+assets/
+admin/
+dashboard/
+database/
+index.html
+login.html
+register.html
+admin-login.html
+
+DO NOT upload css, js, images separately.
+They are already correctly inside assets/.

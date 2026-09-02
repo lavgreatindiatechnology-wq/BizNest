@@ -1,0 +1,1 @@
+create table if not exists profiles(id uuid primary key references auth.users(id), name text, business_name text, is_blocked boolean default false);
