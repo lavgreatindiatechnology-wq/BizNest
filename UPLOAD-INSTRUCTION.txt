@@ -1,0 +1,4 @@
+1. Extract ZIP
+2. Open BizBoost-AI-Complete folder
+3. Upload EVERYTHING INSIDE it to GitHub repository root
+4. Settings > Pages > Deploy from branch > main > /(root)
