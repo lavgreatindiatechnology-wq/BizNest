@@ -1,0 +1,3 @@
+// Add your Supabase URL and publishable key here for production integration.
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_PUBLISHABLE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
