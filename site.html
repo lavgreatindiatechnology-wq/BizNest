@@ -1,12 +1,759 @@
-<div class="business-menu">
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <a href="#home">Home</a>
-  <a href="#productsSection">Products</a>
-  <a href="#servicesSection">Services</a>
-  <a href="#aboutSection">About</a>
+  <title>Business Website</title>
 
-  <a href="#contactSection" class="contact-header-btn">
-    Contact
-  </a>
+  <style>
+    *{
+      box-sizing:border-box;
+      margin:0;
+      padding:0;
+    }
+
+    html{
+      scroll-behavior:smooth;
+    }
+
+    body{
+      font-family:Arial,Helvetica,sans-serif;
+      background:#f8fafc;
+      color:#1e293b;
+    }
+
+    /* ================= HEADER ================= */
+
+    .business-header{
+      position:sticky;
+      top:0;
+      z-index:1000;
+      background:#ffffff;
+      border-bottom:1px solid #e5e7eb;
+      box-shadow:0 2px 15px rgba(0,0,0,.06);
+    }
+
+    .business-nav{
+      max-width:1250px;
+      min-height:76px;
+      margin:auto;
+      padding:10px 22px;
+
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:20px;
+    }
+
+    .business-brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      text-decoration:none;
+      color:#1e293b;
+      min-width:0;
+    }
+
+    .header-logo{
+      width:52px;
+      height:52px;
+      object-fit:cover;
+      border-radius:14px;
+      border:1px solid #e5e7eb;
+      background:#fff;
+      display:none;
+    }
+
+    .header-logo.show{
+      display:block;
+    }
+
+    .header-logo-placeholder{
+      width:52px;
+      height:52px;
+      border-radius:14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#ff653d;
+      color:#fff;
+      font-size:23px;
+      font-weight:800;
+    }
+
+    .brand-name{
+      font-size:20px;
+      font-weight:800;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:250px;
+    }
+
+    .brand-category{
+      font-size:12px;
+      color:#64748b;
+      margin-top:4px;
+    }
+
+    .business-menu{
+      display:flex;
+      align-items:center;
+      gap:5px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .business-menu a{
+      text-decoration:none;
+      color:#475569;
+      padding:11px 13px;
+      border-radius:9px;
+      font-size:14px;
+      font-weight:500;
+    }
+
+    .business-menu a:hover{
+      background:#f1f5f9;
+    }
+
+    .customer-login-btn{
+      background:#182235 !important;
+      color:#ffffff !important;
+      font-weight:700 !important;
+      padding:11px 16px !important;
+      border-radius:10px !important;
+    }
+
+    .customer-login-btn:hover{
+      background:#334155 !important;
+    }
+
+    /* ================= HERO ================= */
+
+    .hero{
+      background:linear-gradient(135deg,#fff5f1,#eef4ff);
+      padding:60px 20px;
+    }
+
+    .hero-inner{
+      max-width:1150px;
+      margin:auto;
+      display:flex;
+      align-items:center;
+      gap:35px;
+    }
+
+    .hero-logo{
+      width:140px;
+      height:140px;
+      border-radius:24px;
+      object-fit:cover;
+      background:#ffffff;
+      padding:8px;
+      border:1px solid #e5e7eb;
+      box-shadow:0 12px 30px rgba(0,0,0,.08);
+    }
+
+    .hero h1{
+      font-size:42px;
+      margin-bottom:12px;
+    }
+
+    .hero-tagline{
+      font-size:20px;
+      font-weight:600;
+      color:#475569;
+      margin-bottom:15px;
+    }
+
+    .hero-contact{
+      color:#64748b;
+      line-height:1.7;
+    }
+
+    /* ================= SECTIONS ================= */
+
+    .business-section{
+      max-width:1150px;
+      margin:auto;
+      padding:60px 20px;
+    }
+
+    .section-title{
+      font-size:30px;
+      margin-bottom:8px;
+    }
+
+    .section-subtitle{
+      color:#64748b;
+      margin-bottom:30px;
+    }
+
+    /* ================= GRID ================= */
+
+    .business-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+      gap:22px;
+    }
+
+    /* ================= PRODUCTS ================= */
+
+    .product-card{
+      background:#ffffff;
+      border:1px solid #e5e7eb;
+      border-radius:18px;
+      overflow:hidden;
+      box-shadow:0 5px 18px rgba(0,0,0,.04);
+      transition:.25s;
+    }
+
+    .product-card:hover{
+      transform:translateY(-5px);
+      box-shadow:0 15px 35px rgba(0,0,0,.10);
+    }
+
+    .product-image{
+      width:100%;
+      height:210px;
+      object-fit:cover;
+      background:#f1f5f9;
+    }
+
+    .product-body{
+      padding:18px;
+    }
+
+    .product-body h3{
+      margin-bottom:10px;
+      font-size:20px;
+    }
+
+    .product-description{
+      color:#64748b;
+      line-height:1.5;
+      min-height:45px;
+    }
+
+    .price{
+      margin:16px 0;
+      color:#ff653d;
+      font-size:21px;
+      font-weight:800;
+    }
+
+    /* ================= SERVICES ================= */
+
+    .service-card{
+      background:#ffffff;
+      border:1px solid #e5e7eb;
+      border-radius:18px;
+      padding:25px;
+      box-shadow:0 5px 18px rgba(0,0,0,.04);
+    }
+
+    .service-icon{
+      font-size:40px;
+      margin-bottom:14px;
+    }
+
+    .service-card h3{
+      margin-bottom:10px;
+      font-size:20px;
+    }
+
+    .service-card p{
+      color:#64748b;
+      line-height:1.6;
+    }
+
+    /* ================= BUTTON ================= */
+
+    .action-btn{
+      width:100%;
+      margin-top:16px;
+      padding:13px;
+      border:none;
+      border-radius:10px;
+      background:#ff653d;
+      color:#fff;
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    .action-btn:hover{
+      opacity:.9;
+    }
+
+    /* ================= ABOUT ================= */
+
+    .about-box{
+      background:#ffffff;
+      border:1px solid #e5e7eb;
+      border-radius:18px;
+      padding:30px;
+      color:#475569;
+      line-height:1.8;
+    }
+
+    /* ================= CONTACT ================= */
+
+    .contact-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:18px;
+    }
+
+    .contact-card{
+      background:#ffffff;
+      border:1px solid #e5e7eb;
+      border-radius:15px;
+      padding:22px;
+    }
+
+    .contact-card h3{
+      margin-bottom:8px;
+    }
+
+    .contact-card p{
+      color:#64748b;
+      word-break:break-word;
+    }
+
+    /* ================= FOOTER ================= */
+
+    footer{
+      background:#182235;
+      color:#fff;
+      padding:45px 20px;
+      margin-top:30px;
+    }
+
+    .footer-inner{
+      max-width:1150px;
+      margin:auto;
+      display:flex;
+      justify-content:space-between;
+      gap:25px;
+      flex-wrap:wrap;
+    }
+
+    footer p{
+      margin-top:10px;
+      color:#cbd5e1;
+    }
+
+    /* ================= MODAL ================= */
+
+    .modal{
+      display:none;
+      position:fixed;
+      inset:0;
+      z-index:5000;
+      background:rgba(0,0,0,.65);
+      padding:20px;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .modal.show{
+      display:flex;
+    }
+
+    .modal-box{
+      width:100%;
+      max-width:500px;
+      background:#fff;
+      border-radius:20px;
+      padding:25px;
+      box-shadow:0 20px 60px rgba(0,0,0,.25);
+    }
+
+    .modal-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:15px;
+      margin-bottom:15px;
+    }
+
+    .close-btn{
+      width:38px;
+      height:38px;
+      border:0;
+      border-radius:50%;
+      cursor:pointer;
+      font-size:23px;
+      background:#f1f5f9;
+    }
+
+    .selected-item{
+      padding:12px;
+      background:#fff5f1;
+      border-radius:10px;
+      margin-bottom:15px;
+      color:#475569;
+    }
+
+    .form-input,
+    .form-textarea{
+      width:100%;
+      padding:13px;
+      border:1px solid #d0d5dd;
+      border-radius:10px;
+      margin-bottom:12px;
+      font-size:15px;
+    }
+
+    .form-textarea{
+      min-height:90px;
+      resize:vertical;
+    }
+
+    .message{
+      margin-top:12px;
+      text-align:center;
+      font-weight:600;
+    }
+
+    /* ================= MOBILE ================= */
+
+    @media(max-width:800px){
+
+      .business-nav{
+        padding:10px 14px;
+      }
+
+      .business-menu{
+        gap:2px;
+      }
+
+      .business-menu a:not(.customer-login-btn){
+        display:none;
+      }
+
+      .brand-name{
+        max-width:150px;
+        font-size:17px;
+      }
+
+      .hero{
+        padding:45px 16px;
+      }
+
+      .hero-inner{
+        flex-direction:column;
+        text-align:center;
+      }
+
+      .hero h1{
+        font-size:32px;
+      }
+
+      .hero-logo{
+        width:115px;
+        height:115px;
+      }
+
+      .business-section{
+        padding:45px 16px;
+      }
+
+      .section-title{
+        font-size:26px;
+      }
+
+    }
+
+  </style>
+</head>
+
+<body>
+
+<!-- ================= HEADER ================= -->
+
+<header class="business-header">
+
+  <nav class="business-nav">
+
+    <a href="#home" class="business-brand">
+
+      <img id="headerLogo" class="header-logo" alt="Business Logo">
+
+      <div id="logoPlaceholder" class="header-logo-placeholder">
+        B
+      </div>
+
+      <div>
+
+        <div id="headerBusinessName" class="brand-name">
+          Business
+        </div>
+
+        <div id="headerCategory" class="brand-category">
+          Professional Business
+        </div>
+
+      </div>
+
+    </a>
+
+    <div class="business-menu">
+
+      <a href="#home">Home</a>
+
+      <a href="#productsSection">Products</a>
+
+      <a href="#servicesSection">Services</a>
+
+      <a href="#aboutSection">About</a>
+
+      <a href="#contactSection">Contact</a>
+
+      <!-- CUSTOMER LOGIN -->
+
+      <a id="customerLoginLink"
+         href="customer.html"
+         class="customer-login-btn">
+        👤 Customer Login
+      </a>
+
+    </div>
+
+  </nav>
+
+</header>
+
+
+<!-- ================= LOADING ================= -->
+
+<div id="loading"
+     style="padding:100px 20px;text-align:center;font-size:20px;">
+  Loading business website...
+</div>
+
+
+<!-- ================= WEBSITE ================= -->
+
+<div id="websiteContent" style="display:none;">
+
+  <!-- HERO -->
+
+  <section id="home" class="hero">
+
+    <div class="hero-inner">
+
+      <img id="heroLogo"
+           class="hero-logo"
+           alt="Business Logo">
+
+      <div>
+
+        <h1 id="businessName">
+          Business Name
+        </h1>
+
+        <div id="businessTagline" class="hero-tagline"></div>
+
+        <div id="businessContact" class="hero-contact"></div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- ABOUT -->
+
+  <section id="aboutSection" class="business-section">
+
+    <h2 class="section-title">About Us</h2>
+
+    <p class="section-subtitle">
+      Learn more about our business.
+    </p>
+
+    <div id="businessAbout" class="about-box">
+      Welcome to our business.
+    </div>
+
+  </section>
+
+
+  <!-- PRODUCTS -->
+
+  <section id="productsSection" class="business-section">
+
+    <h2 class="section-title">Our Products</h2>
+
+    <p class="section-subtitle">
+      Explore our products and place your order.
+    </p>
+
+    <div id="products" class="business-grid"></div>
+
+  </section>
+
+
+  <!-- SERVICES -->
+
+  <section id="servicesSection" class="business-section">
+
+    <h2 class="section-title">Our Services</h2>
+
+    <p class="section-subtitle">
+      Book our professional services.
+    </p>
+
+    <div id="services" class="business-grid"></div>
+
+  </section>
+
+
+  <!-- CONTACT -->
+
+  <section id="contactSection" class="business-section">
+
+    <h2 class="section-title">Contact Us</h2>
+
+    <div class="contact-grid">
+
+      <div class="contact-card">
+        <h3>📞 Phone</h3>
+        <p id="contactPhone">-</p>
+      </div>
+
+      <div class="contact-card">
+        <h3>💬 WhatsApp</h3>
+        <p id="contactWhatsapp">-</p>
+      </div>
+
+      <div class="contact-card">
+        <h3>📍 Address</h3>
+        <p id="contactAddress">-</p>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- FOOTER -->
+
+  <footer>
+
+    <div class="footer-inner">
+
+      <div>
+
+        <h2 id="footerBusinessName">
+          Business
+        </h2>
+
+        <p>
+          Thank you for visiting our website.
+        </p>
+
+      </div>
+
+      <div>
+
+        <p id="footerContact"></p>
+
+      </div>
+
+    </div>
+
+  </footer>
 
 </div>
+
+
+<!-- ================= ORDER / BOOKING MODAL ================= -->
+
+<div id="requestModal" class="modal">
+
+  <div class="modal-box">
+
+    <div class="modal-header">
+
+      <h2 id="modalTitle">
+        Request
+      </h2>
+
+      <button class="close-btn"
+              onclick="closeRequest()">
+        ×
+      </button>
+
+    </div>
+
+    <div id="selectedItem"
+         class="selected-item"></div>
+
+    <input id="customerName"
+           class="form-input"
+           placeholder="Your Name">
+
+    <input id="customerPhone"
+           class="form-input"
+           placeholder="Your Phone Number">
+
+    <textarea id="customerMessage"
+              class="form-textarea"
+              placeholder="Message (Optional)"></textarea>
+
+    <button class="action-btn"
+            onclick="submitRequest()">
+      Submit Request
+    </button>
+
+    <div id="requestMessage"
+         class="message"></div>
+
+  </div>
+
+</div>
+
+
+<!-- ================= SCRIPTS ================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="assets/js/config.js"></script>
+
+<script src="assets/js/public.js"></script>
+
+
+<!-- ================= CUSTOMER LOGIN BUSINESS LINK ================= -->
+
+<script>
+
+  /*
+    Customer Login के बाद उसी दुकान पर वापस आने के लिए
+    वर्तमान business slug customer.html को भेजा जाता है
+  */
+
+  const urlParams = new URLSearchParams(window.location.search);
+
+  const slug = urlParams.get("slug");
+
+  const customerLoginLink =
+    document.getElementById("customerLoginLink");
+
+  if (slug) {
+
+    customerLoginLink.href =
+      "customer.html?slug=" +
+      encodeURIComponent(slug);
+
+  }
+
+</script>
+
+</body>
+</html>
