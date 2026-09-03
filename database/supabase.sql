@@ -1,0 +1,9 @@
+create extension if not exists pgcrypto;
+create table if not exists public.businesses(id uuid primary key default gen_random_uuid(),owner_id uuid references auth.users(id) on delete cascade,name text not null,slug text unique not null,tagline text,phone text,email text,address text,created_at timestamptz default now());
+create table if not exists public.products(id uuid primary key default gen_random_uuid(),business_id uuid references public.businesses(id) on delete cascade,name text not null,description text,price numeric default 0,image_url text,active boolean default true,created_at timestamptz default now());
+create table if not exists public.services(id uuid primary key default gen_random_uuid(),business_id uuid references public.businesses(id) on delete cascade,name text not null,description text,price numeric default 0,active boolean default true,created_at timestamptz default now());
+alter table public.businesses enable row level security;alter table public.products enable row level security;alter table public.services enable row level security;
+drop policy if exists public_read_businesses on public.businesses;create policy public_read_businesses on public.businesses for select using(true);
+drop policy if exists public_read_products on public.products;create policy public_read_products on public.products for select using(active=true);
+drop policy if exists public_read_services on public.services;create policy public_read_services on public.services for select using(active=true);
+drop policy if exists owner_business on public.businesses;create policy owner_business on public.businesses for all to authenticated using(owner_id=auth.uid()) with check(owner_id=auth.uid());
