@@ -1,1 +1,190 @@
-<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="assets/css/style.css"><title>Customer</title></head><body><header class="topbar"><a id="back" class="brand" href="index.html">← Back to Business</a></header><main class="wrap narrow"><div class="card"><h1 id="title">Customer Login</h1><div id="authSection"><input id="customerName" class="input" placeholder="Your Name (for new account)"><input id="email" class="input" type="email" placeholder="Email"><input id="password" class="input" type="password" placeholder="Password"><div class="row"><button id="login" class="btn orange">Login</button><button id="signup" class="btn">Create Account</button></div><p id="msg" class="msg"></p></div><div id="requestSection" class="hidden"><h2 id="welcomeCustomer">Welcome Customer</h2><p id="requestInfo"></p><input id="cname" class="input" placeholder="Your Name"><input id="cphone" class="input" placeholder="Phone Number"><textarea id="note" class="input" placeholder="Message / requirement"></textarea><div class="row"><button id="send" class="btn orange">Send Request</button><button id="logout" class="btn dark">Logout</button></div><p id="done" class="msg"></p><hr><h2>📋 My Order & Booking History</h2><div id="historyList"></div></div></div></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="assets/js/config.js"></script><script src="assets/js/customer.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Customer | BizNest</title>
+
+    <link rel="stylesheet"
+          href="assets/css/style.css">
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <a id="back"
+       class="brand"
+       href="index.html">
+
+        ← Back to Business
+
+    </a>
+
+</header>
+
+
+<main class="wrap narrow">
+
+    <!-- =========================
+         CUSTOMER LOGIN / REGISTER
+    ========================== -->
+
+    <div id="authSection"
+         class="card">
+
+        <h1>Customer Login</h1>
+
+        <p class="muted">
+            Login करके अपना Order या Booking पूरा करें।
+        </p>
+
+
+        <input
+            id="customerName"
+            class="input"
+            type="text"
+            placeholder="Your Name (new customer)"
+        >
+
+
+        <input
+            id="email"
+            class="input"
+            type="email"
+            placeholder="Email Address"
+        >
+
+
+        <input
+            id="password"
+            class="input"
+            type="password"
+            placeholder="Password"
+        >
+
+
+        <div class="row">
+
+            <button
+                id="login"
+                type="button"
+                class="btn orange">
+
+                Login
+
+            </button>
+
+
+            <button
+                id="signup"
+                type="button"
+                class="btn dark">
+
+                Create Account
+
+            </button>
+
+        </div>
+
+
+        <p id="msg"
+           class="msg"></p>
+
+    </div>
+
+
+
+    <!-- =========================
+         ORDER / BOOKING
+    ========================== -->
+
+    <div id="requestSection"
+         class="card hidden">
+
+        <h2 id="welcomeCustomer">
+            Welcome Customer
+        </h2>
+
+
+        <div id="requestInfo"></div>
+
+
+        <hr>
+
+
+        <input
+            id="cname"
+            class="input"
+            type="text"
+            placeholder="Your Name"
+        >
+
+
+        <input
+            id="cphone"
+            class="input"
+            type="tel"
+            placeholder="Phone Number"
+        >
+
+
+        <textarea
+            id="note"
+            class="input"
+            placeholder="Message (optional)"
+        ></textarea>
+
+
+        <button
+            id="confirmRequest"
+            type="button"
+            class="btn orange">
+
+            Confirm
+
+        </button>
+
+
+        <button
+            id="logout"
+            type="button"
+            class="btn dark">
+
+            Logout
+
+        </button>
+
+
+        <p id="done"
+           class="msg"></p>
+
+
+        <hr>
+
+
+        <h2>
+            📋 My Order & Booking History
+        </h2>
+
+
+        <div id="historyList"></div>
+
+    </div>
+
+</main>
+
+
+<!-- SUPABASE -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="assets/js/config.js"></script>
+
+<script src="assets/js/customer.js"></script>
+
+</body>
+</html>
