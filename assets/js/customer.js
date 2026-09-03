@@ -1,14 +1,27 @@
 const $ = (id) => document.getElementById(id);
 
-const params = new URLSearchParams(location.search);
+
+// ==========================================
+// URL DATA
+// ==========================================
+
+const params = new URLSearchParams(window.location.search);
 
 const slug = params.get("slug");
+
 const type = params.get("type") || "general";
+
 const item = params.get("item") || "General Request";
+
+
+// ==========================================
+// BACK URL
+// ==========================================
 
 const backUrl = slug
     ? "site.html?slug=" + encodeURIComponent(slug)
     : "index.html";
+
 
 $("back").href = backUrl;
 
@@ -17,68 +30,91 @@ $("back").href = backUrl;
 // GET CUSTOMER NAME
 // ==========================================
 
-function getCustomerName(user) {
+function customerName(user) {
 
     return (
-        user?.user_metadata?.name ||
-        user?.email?.split("@")[0] ||
+        user.user_metadata?.name ||
+        user.email.split("@")[0] ||
         "Customer"
     );
 }
 
 
 // ==========================================
-// LOAD CUSTOMER PROFILE
+// LOAD PAGE
 // ==========================================
 
-async function loadCustomer() {
+async function loadPage() {
 
     const {
         data: { user }
     } = await sb.auth.getUser();
 
 
+    // CUSTOMER NOT LOGIN
+
     if (!user) {
 
         $("authSection").classList.remove("hidden");
+
         $("requestSection").classList.add("hidden");
 
         return;
     }
 
 
+    // CUSTOMER LOGGED IN
+
     $("authSection").classList.add("hidden");
+
     $("requestSection").classList.remove("hidden");
 
 
-    const customerName = getCustomerName(user);
+    const name = customerName(user);
 
 
     $("welcomeCustomer").textContent =
-        "👋 Welcome, " + customerName;
+        "👋 Welcome, " + name;
 
 
-    $("cname").value = customerName;
+    $("cname").value = name;
 
 
-    // ==========================================
-    // PRODUCT / SERVICE NAME
-    // ==========================================
+    // PRODUCT
 
     if (type === "order") {
 
         $("requestInfo").innerHTML =
-            "🛒 <b>Product:</b> " + item;
+            "<h3>🛒 Product Order</h3>" +
+            "<p><b>" + item + "</b></p>";
 
-    } else if (type === "booking") {
+
+        $("confirmRequest").textContent =
+            "🛒 Confirm Order";
+
+    }
+
+
+    // SERVICE
+
+    else if (type === "booking") {
 
         $("requestInfo").innerHTML =
-            "📅 <b>Service:</b> " + item;
+            "<h3>📅 Book Appointment</h3>" +
+            "<p><b>" + item + "</b></p>";
 
-    } else {
 
-        $("requestInfo").innerHTML =
-            "Please enter your request.";
+        $("confirmRequest").textContent =
+            "📅 Confirm Booking";
+
+    }
+
+
+    else {
+
+        $("confirmRequest").textContent =
+            "Send Request";
+
     }
 
 
@@ -92,7 +128,7 @@ async function loadCustomer() {
 
 $("login").addEventListener(
     "click",
-    async function () {
+    async () => {
 
         const email =
             $("email").value.trim();
@@ -104,20 +140,20 @@ $("login").addEventListener(
         if (!email || !password) {
 
             $("msg").textContent =
-                "❌ Email and password required.";
+                "❌ Email और Password डालें।";
 
             return;
         }
 
 
-        const {
-            error
-        } = await sb.auth.signInWithPassword({
+        const { error } =
+            await sb.auth.signInWithPassword({
 
-            email: email,
+                email: email,
 
-            password: password
-        });
+                password: password
+
+            });
 
 
         if (error) {
@@ -130,26 +166,10 @@ $("login").addEventListener(
 
 
         $("msg").textContent =
-            "✅ Login successful!";
+            "✅ Login Successful";
 
 
-        await loadCustomer();
-
-        // अगर Product या Booking है
-        // तो सीधे request भेजने की कोशिश करें
-
-        if (
-            type === "order" ||
-            type === "booking"
-        ) {
-
-            setTimeout(() => {
-
-                autoOrderOrBooking();
-
-            }, 500);
-
-        }
+        await loadPage();
 
     }
 );
@@ -161,7 +181,7 @@ $("login").addEventListener(
 
 $("signup").addEventListener(
     "click",
-    async function () {
+    async () => {
 
         const name =
             $("customerName").value.trim();
@@ -176,7 +196,7 @@ $("signup").addEventListener(
         if (!name) {
 
             $("msg").textContent =
-                "❌ Enter your name.";
+                "❌ अपना नाम डालें।";
 
             return;
         }
@@ -185,7 +205,7 @@ $("signup").addEventListener(
         if (!email) {
 
             $("msg").textContent =
-                "❌ Enter your email.";
+                "❌ Email डालें।";
 
             return;
         }
@@ -194,7 +214,7 @@ $("signup").addEventListener(
         if (password.length < 6) {
 
             $("msg").textContent =
-                "❌ Password must be at least 6 characters.";
+                "❌ Password कम से कम 6 characters का होना चाहिए।";
 
             return;
         }
@@ -216,8 +236,11 @@ $("signup").addEventListener(
                     name: name,
 
                     role: "customer"
+
                 }
+
             }
+
         });
 
 
@@ -230,32 +253,18 @@ $("signup").addEventListener(
         }
 
 
+        // SESSION AVAILABLE
+
         if (data.session) {
 
-            $("msg").textContent =
-                "✅ Account created successfully!";
+            await loadPage();
 
+        }
 
-            await loadCustomer();
-
-
-            if (
-                type === "order" ||
-                type === "booking"
-            ) {
-
-                setTimeout(() => {
-
-                    autoOrderOrBooking();
-
-                }, 500);
-
-            }
-
-        } else {
+        else {
 
             $("msg").textContent =
-                "✅ Account created. Please login.";
+                "✅ Account बन गया। अब Login करें।";
 
         }
 
@@ -269,12 +278,20 @@ $("signup").addEventListener(
 
 async function getBusiness() {
 
+    if (!slug) {
+
+        throw new Error(
+            "Business URL missing."
+        );
+    }
+
+
     const {
         data,
         error
     } = await sb
         .from("businesses")
-        .select("id")
+        .select("id,name")
         .eq("slug", slug)
         .maybeSingle();
 
@@ -288,7 +305,7 @@ async function getBusiness() {
     if (!data) {
 
         throw new Error(
-            "Business not found."
+            "Business नहीं मिला।"
         );
     }
 
@@ -298,277 +315,154 @@ async function getBusiness() {
 
 
 // ==========================================
-// CREATE ORDER / BOOKING
+// CONFIRM ORDER / BOOKING
 // ==========================================
 
-async function createRequest(auto = false) {
-
-    try {
-
-        const {
-            data: { user }
-        } = await sb.auth.getUser();
-
-
-        if (!user) {
-
-            throw new Error(
-                "Please login first."
-            );
-        }
-
-
-        const business =
-            await getBusiness();
-
-
-        const customerName =
-            $("cname").value.trim();
-
-
-        const customerPhone =
-            $("cphone").value.trim();
-
-
-        const note =
-            $("note").value.trim();
-
-
-        // ======================================
-        // FIRST TIME PHONE REQUIRED
-        // ======================================
-
-        if (!customerName) {
-
-            $("done").textContent =
-                "❌ Please enter your name.";
-
-            return false;
-        }
-
-
-        if (!customerPhone) {
-
-            $("done").textContent =
-                "📞 Please enter your phone number, then click Confirm.";
-
-            return false;
-        }
-
-
-        // ======================================
-        // CHECK DUPLICATE PENDING ORDER
-        // ======================================
-
-        const {
-            data: existing
-        } = await sb
-            .from("requests")
-            .select("id")
-            .eq("business_id", business.id)
-            .eq("customer_id", user.id)
-            .eq("item_name", item)
-            .eq("type", type)
-            .eq("status", "pending")
-            .maybeSingle();
-
-
-        if (existing) {
-
-            $("done").textContent =
-                "⚠️ This order/booking is already pending.";
-
-            return true;
-        }
-
-
-        // ======================================
-        // INSERT REQUEST
-        // ======================================
-
-        const {
-            error
-        } = await sb
-            .from("requests")
-            .insert({
-
-                business_id:
-                    business.id,
-
-                customer_id:
-                    user.id,
-
-                type:
-                    type,
-
-                item_name:
-                    item,
-
-                customer_name:
-                    customerName,
-
-                customer_phone:
-                    customerPhone,
-
-                note:
-                    note,
-
-                status:
-                    "pending"
-            });
-
-
-        if (error) {
-
-            throw error;
-        }
-
-
-        if (type === "order") {
-
-            $("done").textContent =
-                "🎉 Product order placed successfully!";
-
-        } else if (type === "booking") {
-
-            $("done").textContent =
-                "🎉 Appointment booked successfully!";
-
-        } else {
-
-            $("done").textContent =
-                "🎉 Request sent successfully!";
-        }
-
-
-        await loadHistory();
-
-
-        return true;
-
-    } catch (error) {
-
-        console.error(error);
-
-        $("done").textContent =
-            "❌ " + error.message;
-
-        return false;
-    }
-}
-
-
-// ==========================================
-// AUTO ORDER / BOOKING
-// ==========================================
-
-async function autoOrderOrBooking() {
-
-    // केवल Product और Service के लिए
-
-    if (
-        type !== "order" &&
-        type !== "booking"
-    ) {
-
-        return;
-    }
-
-
-    const phone =
-        $("cphone").value.trim();
-
-
-    // Phone नहीं है तो form दिखेगा
-
-    if (!phone) {
-
-        if (type === "order") {
-
-            $("done").textContent =
-                "📞 अपना Phone Number डालें और Confirm Order दबाएँ.";
-
-        } else {
-
-            $("done").textContent =
-                "📞 अपना Phone Number डालें और Confirm Booking दबाएँ.";
-        }
-
-
-        showConfirmButton();
-
-        return;
-    }
-
-
-    // Phone पहले से है तो direct create
-
-    await createRequest(true);
-}
-
-
-// ==========================================
-// SHOW CONFIRM BUTTON
-// ==========================================
-
-function showConfirmButton() {
-
-    let button =
-        $("confirmRequest");
-
-
-    if (button) return;
-
-
-    button =
-        document.createElement("button");
-
-
-    button.id =
-        "confirmRequest";
-
-
-    button.className =
-        "btn orange";
-
-
-    if (type === "order") {
-
-        button.textContent =
-            "🛒 Confirm Order";
-
-    } else {
-
-        button.textContent =
-            "📅 Confirm Booking";
-    }
-
-
-    button.addEventListener(
-        "click",
-        async function () {
-
-            await createRequest(false);
-
-        }
-    );
-
-
-    $("send")
-        .parentNode
-        .appendChild(button);
-}
-
-
-// ==========================================
-// MANUAL SEND BUTTON
-// ==========================================
-
-$("send").addEventListener(
+$("confirmRequest").addEventListener(
     "click",
-    async function () {
+    async () => {
 
-        await createRequest(false);
+        try {
+
+            $("done").textContent =
+                "Processing...";
+
+
+            // USER
+
+            const {
+                data: { user }
+            } = await sb.auth.getUser();
+
+
+            if (!user) {
+
+                throw new Error(
+                    "पहले Login करें।"
+                );
+            }
+
+
+            // NAME
+
+            const name =
+                $("cname").value.trim();
+
+
+            if (!name) {
+
+                throw new Error(
+                    "अपना नाम डालें।"
+                );
+            }
+
+
+            // PHONE
+
+            const phone =
+                $("cphone").value.trim();
+
+
+            if (!phone) {
+
+                throw new Error(
+                    "अपना Phone Number डालें।"
+                );
+            }
+
+
+            // BUSINESS
+
+            const business =
+                await getBusiness();
+
+
+            // INSERT REQUEST
+
+            const {
+                error
+            } = await sb
+                .from("requests")
+                .insert({
+
+                    business_id:
+                        business.id,
+
+                    customer_id:
+                        user.id,
+
+                    type:
+                        type,
+
+                    item_name:
+                        item,
+
+                    customer_name:
+                        name,
+
+                    customer_phone:
+                        phone,
+
+                    note:
+                        $("note").value.trim(),
+
+                    status:
+                        "pending"
+
+                });
+
+
+            if (error) {
+
+                throw error;
+            }
+
+
+            // SUCCESS MESSAGE
+
+            if (type === "order") {
+
+                $("done").textContent =
+                    "🎉 आपका Order सफलतापूर्वक भेज दिया गया!";
+
+            }
+
+            else if (type === "booking") {
+
+                $("done").textContent =
+                    "🎉 आपकी Appointment Booking सफलतापूर्वक हो गई!";
+
+            }
+
+            else {
+
+                $("done").textContent =
+                    "🎉 Request सफलतापूर्वक भेज दिया गया!";
+
+            }
+
+
+            // CLEAR OPTIONAL NOTE
+
+            $("note").value = "";
+
+
+            // RELOAD HISTORY
+
+            await loadHistory();
+
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+
+
+            $("done").textContent =
+                "❌ ERROR: " + error.message;
+
+        }
 
     }
 );
@@ -594,15 +488,10 @@ async function loadHistory() {
     } = await sb
         .from("requests")
         .select("*")
-        .eq(
-            "customer_id",
-            user.id
-        )
+        .eq("customer_id", user.id)
         .order(
             "created_at",
-            {
-                ascending: false
-            }
+            { ascending: false }
         );
 
 
@@ -618,7 +507,7 @@ async function loadHistory() {
     if (!data || data.length === 0) {
 
         $("historyList").innerHTML =
-            "<p>No orders or bookings yet.</p>";
+            "<p>अभी कोई Order या Booking नहीं है।</p>";
 
         return;
     }
@@ -627,7 +516,7 @@ async function loadHistory() {
     $("historyList").innerHTML =
         data.map(request => {
 
-            const requestIcon =
+            const icon =
                 request.type === "order"
                     ? "🛒 Product Order"
                     : request.type === "booking"
@@ -645,9 +534,7 @@ async function loadHistory() {
 
                     <div>
 
-                        <b>
-                            ${requestIcon}
-                        </b>
+                        <b>${icon}</b>
 
                         <br>
 
@@ -686,11 +573,25 @@ async function loadHistory() {
 
 $("logout").addEventListener(
     "click",
-    async function () {
+    async () => {
 
         await sb.auth.signOut();
 
-        location.href = backUrl;
+        window.location.href =
+            backUrl;
+
+    }
+);
+
+
+// ==========================================
+// AUTH CHANGE
+// ==========================================
+
+sb.auth.onAuthStateChange(
+    () => {
+
+        loadPage();
 
     }
 );
@@ -700,11 +601,4 @@ $("logout").addEventListener(
 // START
 // ==========================================
 
-sb.auth.onAuthStateChange(() => {
-
-    loadCustomer();
-
-});
-
-
-loadCustomer();
+loadPage();
