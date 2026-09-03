@@ -136,3 +136,35 @@ async function loadRequests() {
 
         `).join("");
 }
+window.updateRequestStatus = async function(id, status) {
+
+    const confirmAction = confirm(
+        "Are you sure you want to change status to: " +
+        status
+    );
+
+    if (!confirmAction)
+        return;
+
+
+    const { error } =
+        await sb
+            .from("requests")
+            .update({
+                status: status
+            })
+            .eq("id", id);
+
+
+    if (error) {
+
+        alert("❌ " + error.message);
+
+        return;
+    }
+
+
+    alert("✅ Status updated successfully!");
+
+    loadRequests();
+};
