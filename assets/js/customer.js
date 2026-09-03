@@ -1,280 +1,332 @@
 const $ = (id) => document.getElementById(id);
 
 
-// ==========================================
-// URL DATA
-// ==========================================
+// =========================================
+// GET URL DATA
+// =========================================
 
-const params = new URLSearchParams(window.location.search);
+const params =
+    new URLSearchParams(window.location.search);
 
-const slug = params.get("slug");
+const slug =
+    params.get("slug");
 
-const type = params.get("type") || "general";
+const type =
+    params.get("type") || "general";
 
-const item = params.get("item") || "General Request";
+const item =
+    params.get("item") || "General Request";
 
 
-// ==========================================
+// =========================================
 // BACK URL
-// ==========================================
+// =========================================
 
 const backUrl = slug
-    ? "site.html?slug=" + encodeURIComponent(slug)
+    ? "site.html?slug=" +
+      encodeURIComponent(slug)
     : "index.html";
-
 
 $("back").href = backUrl;
 
 
-// ==========================================
+// =========================================
 // GET CUSTOMER NAME
-// ==========================================
+// =========================================
 
-function customerName(user) {
+function getCustomerName(user) {
 
     return (
-        user.user_metadata?.name ||
-        user.email.split("@")[0] ||
+        user?.user_metadata?.name ||
+        user?.email?.split("@")[0] ||
         "Customer"
     );
 }
 
 
-// ==========================================
+// =========================================
 // LOAD PAGE
-// ==========================================
+// =========================================
 
 async function loadPage() {
 
-    const {
-        data: { user }
-    } = await sb.auth.getUser();
+    try {
+
+        const {
+            data: { user }
+        } = await sb.auth.getUser();
 
 
-    // CUSTOMER NOT LOGIN
+        // NOT LOGGED IN
 
-    if (!user) {
+        if (!user) {
 
-        $("authSection").classList.remove("hidden");
+            $("authSection")
+                .classList
+                .remove("hidden");
 
-        $("requestSection").classList.add("hidden");
+            $("requestSection")
+                .classList
+                .add("hidden");
 
-        return;
+            return;
+        }
+
+
+        // LOGGED IN
+
+        $("authSection")
+            .classList
+            .add("hidden");
+
+        $("requestSection")
+            .classList
+            .remove("hidden");
+
+
+        const name =
+            getCustomerName(user);
+
+
+        $("welcomeCustomer").textContent =
+            "👋 Welcome, " + name;
+
+
+        $("cname").value = name;
+
+
+        // PRODUCT ORDER
+
+        if (type === "order") {
+
+            $("title").textContent =
+                "Place Your Order";
+
+
+            $("requestInfo").innerHTML =
+                "🛒 <b>Product Order:</b> " +
+                item;
+
+
+            $("send").textContent =
+                "🛒 Confirm Order";
+        }
+
+
+        // SERVICE BOOKING
+
+        else if (type === "booking") {
+
+            $("title").textContent =
+                "Book Appointment";
+
+
+            $("requestInfo").innerHTML =
+                "📅 <b>Service Booking:</b> " +
+                item;
+
+
+            $("send").textContent =
+                "📅 Confirm Booking";
+        }
+
+
+        // GENERAL
+
+        else {
+
+            $("requestInfo").textContent =
+                "Send your request.";
+
+            $("send").textContent =
+                "Send Request";
+        }
+
+
+        await loadHistory();
+
     }
 
+    catch (error) {
 
-    // CUSTOMER LOGGED IN
-
-    $("authSection").classList.add("hidden");
-
-    $("requestSection").classList.remove("hidden");
-
-
-    const name = customerName(user);
-
-
-    $("welcomeCustomer").textContent =
-        "👋 Welcome, " + name;
-
-
-    $("cname").value = name;
-
-
-    // PRODUCT
-
-    if (type === "order") {
-
-        $("requestInfo").innerHTML =
-            "<h3>🛒 Product Order</h3>" +
-            "<p><b>" + item + "</b></p>";
-
-
-        $("confirmRequest").textContent =
-            "🛒 Confirm Order";
-
+        console.error(error);
     }
-
-
-    // SERVICE
-
-    else if (type === "booking") {
-
-        $("requestInfo").innerHTML =
-            "<h3>📅 Book Appointment</h3>" +
-            "<p><b>" + item + "</b></p>";
-
-
-        $("confirmRequest").textContent =
-            "📅 Confirm Booking";
-
-    }
-
-
-    else {
-
-        $("confirmRequest").textContent =
-            "Send Request";
-
-    }
-
-
-    await loadHistory();
 }
 
 
-// ==========================================
+// =========================================
 // CUSTOMER LOGIN
-// ==========================================
+// =========================================
 
 $("login").addEventListener(
     "click",
-    async () => {
+    async function () {
 
-        const email =
-            $("email").value.trim();
+        try {
 
-        const password =
-            $("password").value;
+            const email =
+                $("email").value.trim();
 
-
-        if (!email || !password) {
-
-            $("msg").textContent =
-                "❌ Email और Password डालें।";
-
-            return;
-        }
+            const password =
+                $("password").value;
 
 
-        const { error } =
-            await sb.auth.signInWithPassword({
+            if (!email || !password) {
 
-                email: email,
+                $("msg").textContent =
+                    "❌ Email और Password डालें।";
 
-                password: password
-
-            });
-
-
-        if (error) {
-
-            $("msg").textContent =
-                "❌ " + error.message;
-
-            return;
-        }
-
-
-        $("msg").textContent =
-            "✅ Login Successful";
-
-
-        await loadPage();
-
-    }
-);
-
-
-// ==========================================
-// CUSTOMER REGISTER
-// ==========================================
-
-$("signup").addEventListener(
-    "click",
-    async () => {
-
-        const name =
-            $("customerName").value.trim();
-
-        const email =
-            $("email").value.trim();
-
-        const password =
-            $("password").value;
-
-
-        if (!name) {
-
-            $("msg").textContent =
-                "❌ अपना नाम डालें।";
-
-            return;
-        }
-
-
-        if (!email) {
-
-            $("msg").textContent =
-                "❌ Email डालें।";
-
-            return;
-        }
-
-
-        if (password.length < 6) {
-
-            $("msg").textContent =
-                "❌ Password कम से कम 6 characters का होना चाहिए।";
-
-            return;
-        }
-
-
-        const {
-            data,
-            error
-        } = await sb.auth.signUp({
-
-            email: email,
-
-            password: password,
-
-            options: {
-
-                data: {
-
-                    name: name,
-
-                    role: "customer"
-
-                }
-
+                return;
             }
 
-        });
-
-
-        if (error) {
 
             $("msg").textContent =
-                "❌ " + error.message;
-
-            return;
-        }
+                "Login हो रहा है...";
 
 
-        // SESSION AVAILABLE
+            const { error } =
+                await sb.auth
+                    .signInWithPassword({
 
-        if (data.session) {
+                        email: email,
+
+                        password: password
+                    });
+
+
+            if (error) {
+
+                throw error;
+            }
+
+
+            $("msg").textContent =
+                "✅ Login सफल!";
+
 
             await loadPage();
 
         }
 
-        else {
+        catch (error) {
+
+            console.error(error);
 
             $("msg").textContent =
-                "✅ Account बन गया। अब Login करें।";
-
+                "❌ " + error.message;
         }
 
     }
 );
 
 
-// ==========================================
+// =========================================
+// CUSTOMER REGISTER
+// =========================================
+
+$("signup").addEventListener(
+    "click",
+    async function () {
+
+        try {
+
+            const name =
+                $("customerName").value.trim();
+
+            const email =
+                $("email").value.trim();
+
+            const password =
+                $("password").value;
+
+
+            if (!name) {
+
+                throw new Error(
+                    "अपना नाम डालें।"
+                );
+            }
+
+
+            if (!email) {
+
+                throw new Error(
+                    "अपना Email डालें।"
+                );
+            }
+
+
+            if (password.length < 6) {
+
+                throw new Error(
+                    "Password कम से कम 6 characters का होना चाहिए।"
+                );
+            }
+
+
+            $("msg").textContent =
+                "Account बनाया जा रहा है...";
+
+
+            const {
+                data,
+                error
+            } = await sb.auth.signUp({
+
+                email: email,
+
+                password: password,
+
+                options: {
+
+                    data: {
+
+                        name: name,
+
+                        role: "customer"
+                    }
+                }
+            });
+
+
+            if (error) {
+
+                throw error;
+            }
+
+
+            if (data.session) {
+
+                $("msg").textContent =
+                    "✅ Account बन गया!";
+
+                await loadPage();
+
+            }
+
+            else {
+
+                $("msg").textContent =
+                    "✅ Account बन गया। अब Email confirm करके Login करें।";
+            }
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+
+            $("msg").textContent =
+                "❌ " + error.message;
+        }
+
+    }
+);
+
+
+// =========================================
 // GET BUSINESS
-// ==========================================
+// =========================================
 
 async function getBusiness() {
 
@@ -314,21 +366,19 @@ async function getBusiness() {
 }
 
 
-// ==========================================
-// CONFIRM ORDER / BOOKING
-// ==========================================
+// =========================================
+// SEND ORDER / BOOKING
+// =========================================
 
-$("confirmRequest").addEventListener(
+$("send").addEventListener(
     "click",
-    async () => {
+    async function () {
 
         try {
 
             $("done").textContent =
-                "Processing...";
+                "⏳ Processing...";
 
-
-            // USER
 
             const {
                 data: { user }
@@ -338,15 +388,19 @@ $("confirmRequest").addEventListener(
             if (!user) {
 
                 throw new Error(
-                    "पहले Login करें।"
+                    "पहले Customer Login करें।"
                 );
             }
 
 
-            // NAME
-
             const name =
                 $("cname").value.trim();
+
+            const phone =
+                $("cphone").value.trim();
+
+            const note =
+                $("note").value.trim();
 
 
             if (!name) {
@@ -357,12 +411,6 @@ $("confirmRequest").addEventListener(
             }
 
 
-            // PHONE
-
-            const phone =
-                $("cphone").value.trim();
-
-
             if (!phone) {
 
                 throw new Error(
@@ -371,15 +419,16 @@ $("confirmRequest").addEventListener(
             }
 
 
-            // BUSINESS
-
             const business =
                 await getBusiness();
 
 
-            // INSERT REQUEST
+            // =====================================
+            // CREATE REQUEST
+            // =====================================
 
             const {
+                data,
                 error
             } = await sb
                 .from("requests")
@@ -404,12 +453,13 @@ $("confirmRequest").addEventListener(
                         phone,
 
                     note:
-                        $("note").value.trim(),
+                        note,
 
                     status:
                         "pending"
 
-                });
+                })
+                .select();
 
 
             if (error) {
@@ -418,39 +468,45 @@ $("confirmRequest").addEventListener(
             }
 
 
-            // SUCCESS MESSAGE
+            if (!data || data.length === 0) {
+
+                throw new Error(
+                    "Order/Booking save नहीं हुआ।"
+                );
+            }
+
+
+            // SUCCESS
 
             if (type === "order") {
 
                 $("done").textContent =
-                    "🎉 आपका Order सफलतापूर्वक भेज दिया गया!";
+                    "🎉 आपका Order Successfully हो गया!";
 
             }
 
             else if (type === "booking") {
 
                 $("done").textContent =
-                    "🎉 आपकी Appointment Booking सफलतापूर्वक हो गई!";
+                    "🎉 आपकी Appointment Successfully Book हो गई!";
 
             }
 
             else {
 
                 $("done").textContent =
-                    "🎉 Request सफलतापूर्वक भेज दिया गया!";
-
+                    "🎉 Request Successfully भेज दिया गया!";
             }
 
 
-            // CLEAR OPTIONAL NOTE
+            // DISABLE DUPLICATE CLICK
 
-            $("note").value = "";
+            $("send").disabled = true;
 
 
             // RELOAD HISTORY
 
             await loadHistory();
-
 
         }
 
@@ -458,147 +514,160 @@ $("confirmRequest").addEventListener(
 
             console.error(error);
 
-
             $("done").textContent =
-                "❌ ERROR: " + error.message;
-
+                "❌ ERROR: " +
+                error.message;
         }
 
     }
 );
 
 
-// ==========================================
-// CUSTOMER HISTORY
-// ==========================================
+// =========================================
+// LOAD CUSTOMER HISTORY
+// =========================================
 
 async function loadHistory() {
 
-    const {
-        data: { user }
-    } = await sb.auth.getUser();
+    try {
+
+        const {
+            data: { user }
+        } = await sb.auth.getUser();
 
 
-    if (!user) return;
+        if (!user) return;
 
 
-    const {
-        data,
-        error
-    } = await sb
-        .from("requests")
-        .select("*")
-        .eq("customer_id", user.id)
-        .order(
-            "created_at",
-            { ascending: false }
-        );
+        const {
+            data,
+            error
+        } = await sb
+            .from("requests")
+            .select("*")
+            .eq(
+                "customer_id",
+                user.id
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: false
+                }
+            );
 
 
-    if (error) {
+        if (error) {
+
+            throw error;
+        }
+
+
+        if (!data || data.length === 0) {
+
+            $("historyList").innerHTML =
+                "<p>अभी कोई Order या Booking नहीं है।</p>";
+
+            return;
+        }
+
 
         $("historyList").innerHTML =
-            "❌ " + error.message;
+            data.map(request => {
 
-        return;
-    }
-
-
-    if (!data || data.length === 0) {
-
-        $("historyList").innerHTML =
-            "<p>अभी कोई Order या Booking नहीं है।</p>";
-
-        return;
-    }
+                let requestType =
+                    "📩 Request";
 
 
-    $("historyList").innerHTML =
-        data.map(request => {
+                if (request.type === "order") {
 
-            const icon =
-                request.type === "order"
-                    ? "🛒 Product Order"
-                    : request.type === "booking"
-                        ? "📅 Service Booking"
-                        : "📩 Request";
+                    requestType =
+                        "🛒 Product Order";
+                }
 
 
-            const status =
-                request.status || "pending";
+                if (request.type === "booking") {
+
+                    requestType =
+                        "📅 Service Booking";
+                }
 
 
-            return `
+                const status =
+                    request.status || "pending";
 
-                <div class="card history-card">
 
-                    <div>
+                return `
 
-                        <b>${icon}</b>
+                    <div class="card history-card">
 
-                        <br>
+                        <div>
 
-                        <strong>
-                            ${request.item_name || ""}
-                        </strong>
+                            <b>
+                                ${requestType}
+                            </b>
 
-                        <br>
+                            <br>
 
-                        <small>
-                            📞 ${request.customer_phone || ""}
-                        </small>
+                            <strong>
+                                ${request.item_name || ""}
+                            </strong>
+
+                            <br>
+
+                            <small>
+                                📞 ${request.customer_phone || ""}
+                            </small>
+
+                        </div>
+
+
+                        <span
+                            class="status ${status}"
+                        >
+
+                            ${status
+                                .replaceAll("_", " ")
+                            }
+
+                        </span>
 
                     </div>
 
+                `;
 
-                    <span
-                        class="status ${status}"
-                    >
+            }).join("");
 
-                        ${status.replaceAll("_", " ")}
+    }
 
-                    </span>
+    catch (error) {
 
-                </div>
+        console.error(error);
 
-            `;
-
-        }).join("");
+        $("historyList").innerHTML =
+            "❌ " + error.message;
+    }
 }
 
 
-// ==========================================
+// =========================================
 // LOGOUT
-// ==========================================
+// =========================================
 
 $("logout").addEventListener(
     "click",
-    async () => {
+    async function () {
 
         await sb.auth.signOut();
 
         window.location.href =
             backUrl;
-
     }
 );
 
 
-// ==========================================
-// AUTH CHANGE
-// ==========================================
-
-sb.auth.onAuthStateChange(
-    () => {
-
-        loadPage();
-
-    }
-);
-
-
-// ==========================================
+// =========================================
 // START
-// ==========================================
+// =========================================
 
 loadPage();
