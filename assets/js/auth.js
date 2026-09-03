@@ -1,3 +1,0 @@
-const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);const msg=document.getElementById('msg');
-if(loginBtn)loginBtn.onclick=async()=>{msg.textContent='Please wait...';const {error}=await sb.auth.signInWithPassword({email:email.value.trim(),password:password.value});if(error){msg.textContent=error.message;return}location.href='dashboard.html'};
-if(registerBtn)registerBtn.onclick=async()=>{msg.textContent='Creating account...';const {error}=await sb.auth.signUp({email:email.value.trim(),password:password.value,options:{data:{name:(name?.value||'')}}});msg.textContent=error?error.message:'Account created. Check email if confirmation is enabled.'};
