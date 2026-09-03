@@ -4,263 +4,442 @@ const sb = supabase.createClient(
 );
 
 const slug =
-    new URLSearchParams(
-        location.search
-    ).get('slug');
+    new URLSearchParams(location.search)
+        .get("slug");
+
+const $ = (id) =>
+    document.getElementById(id);
 
 
-const $ =
-    id => document.getElementById(id);
+/* -------------------------
+   ESCAPE HTML
+------------------------- */
 
+function esc(value = "") {
 
-function esc(s='') {
+    return String(value).replace(
+        /[&<>"']/g,
+        function(char) {
 
-    return String(s).replace(/[&<>"']/g, c => ({
+            return {
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#039;"
+            }[char];
 
-        '&':'&amp;',
-        '<':'&lt;',
-        '>':'&gt;',
-        '"':'&quot;',
-        "'":'&#39;'
-
-    }[c]));
+        }
+    );
 }
 
 
-function customer(type, item) {
+/* -------------------------
+   OPEN CUSTOMER PAGE
+------------------------- */
+
+function openCustomer(type, item) {
 
     location.href =
-        'customer.html?slug=' +
+        "customer.html?slug=" +
         encodeURIComponent(slug) +
-        '&type=' +
+        "&type=" +
         encodeURIComponent(type) +
-        '&item=' +
+        "&item=" +
         encodeURIComponent(item);
 }
 
+
+/* -------------------------
+   GLOBAL FUNCTIONS
+------------------------- */
+
+window.orderProduct =
+    function(productName) {
+
+        openCustomer(
+            "order",
+            productName
+        );
+    };
+
+
+window.bookService =
+    function(serviceName) {
+
+        openCustomer(
+            "booking",
+            serviceName
+        );
+    };
+
+
+/* -------------------------
+   CUSTOMER LOGIN STATUS
+------------------------- */
+
+async function updateCustomerLogin() {
+
+    const {
+        data: { session }
+    } = await sb.auth.getSession();
+
+
+    const button =
+        $("customerLogin");
+
+
+    if (!button)
+        return;
+
+
+    if (session?.user) {
+
+        const user =
+            session.user;
+
+
+        const name =
+            user.user_metadata?.name ||
+            user.email?.split("@")[0] ||
+            "Customer";
+
+
+        /* SHOW CUSTOMER NAME */
+
+        button.textContent =
+            "👤 " + name;
+
+
+        button.title =
+            "Logged in as " + name;
+
+
+        button.onclick =
+            async () => {
+
+                const logout =
+                    confirm(
+                        "Logged in as " +
+                        name +
+                        "\n\nDo you want to logout?"
+                    );
+
+
+                if (logout) {
+
+                    await sb.auth.signOut();
+
+                    location.reload();
+                }
+            };
+
+
+    } else {
+
+        button.textContent =
+            "Customer Login";
+
+
+        button.title =
+            "Login or Create Customer Account";
+
+
+        button.onclick =
+            () => {
+
+                openCustomer(
+                    "general",
+                    "General Request"
+                );
+            };
+    }
+}
+
+
+/* -------------------------
+   LOAD BUSINESS
+------------------------- */
 
 async function init() {
 
     if (!slug) {
 
-        $('loading').innerHTML = `
-        <h2>Business website not found</h2>
-        <p>Create a business first.</p>
-        `;
+        $("loading").innerHTML =
+            "<h2>Business website not found</h2>";
 
         return;
     }
 
 
-    const r =
-        await sb
-            .from('businesses')
-            .select('*')
-            .eq('slug', slug)
-            .maybeSingle();
+    /* CUSTOMER LOGIN */
+
+    await updateCustomerLogin();
 
 
-    if (r.error || !r.data) {
+    /* BUSINESS DATA */
 
-        $('loading').innerHTML =
-            '<h2>Business website not found</h2>';
+    const {
+        data: business,
+        error: businessError
+    } = await sb
+        .from("businesses")
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
+
+
+    if (businessError || !business) {
+
+        $("loading").innerHTML =
+            "<h2>Business website not found</h2>";
 
         return;
     }
 
 
-    const b = r.data;
+    /* PAGE DATA */
+
+    document.title =
+        business.name;
 
 
-    document.title = b.name;
+    $("brand").textContent =
+        business.name;
 
 
-    $('brand').textContent = b.name;
-
-    $('name').textContent = b.name;
-
-    $('tag').textContent =
-        b.tagline || '';
+    $("name").textContent =
+        business.name;
 
 
-    $('contact').textContent =
-        [b.phone, b.email]
-            .filter(Boolean)
-            .join(' • ');
+    $("tag").textContent =
+        business.tagline || "";
 
 
-    $('addr').textContent =
-        b.address ||
-        'Address not provided';
+    $("contact").textContent =
+        [
+            business.phone,
+            business.email
+        ]
+        .filter(Boolean)
+        .join(" • ");
 
 
-    /* LOGO */
-
-    if (b.logo_url) {
-
-        $('businessLogo').src =
-            b.logo_url;
-
-        $('heroLogo').src =
-            b.logo_url;
+    $("addr").textContent =
+        business.address ||
+        "Address not provided";
 
 
-        $('businessLogo')
-            .classList
-            .remove('hidden');
+    /* -------------------------
+       LOGO
+    ------------------------- */
+
+    if (business.logo_url) {
+
+        const topLogo =
+            $("businessLogo");
+
+        const heroLogo =
+            $("heroLogo");
 
 
-        $('heroLogo')
-            .classList
-            .remove('hidden');
-    }
+        if (topLogo) {
 
+            topLogo.src =
+                business.logo_url;
 
-    $('customerLogin').onclick =
-        () =>
-            customer(
-                'general',
-                'General Request'
+            topLogo.classList.remove(
+                "hidden"
             );
-
-
-    const [p, s] =
-        await Promise.all([
-
-            sb
-                .from('products')
-                .select('*')
-                .eq('business_id', b.id)
-                .eq('active', true),
-
-            sb
-                .from('services')
-                .select('*')
-                .eq('business_id', b.id)
-                .eq('active', true)
-
-        ]);
-
-
-    /* PRODUCTS */
-
-    $('plist').innerHTML =
-        (p.data || []).map(x => `
-
-        <div class="card item">
-
-        ${
-            x.image_url
-
-            ? `
-            <img
-            class="product-image"
-            src="${esc(x.image_url)}"
-            alt="${esc(x.name)}"
-            >
-            `
-
-            : ''
         }
 
 
-        <h3>
-        ${esc(x.name)}
-        </h3>
+        if (heroLogo) {
+
+            heroLogo.src =
+                business.logo_url;
+
+            heroLogo.classList.remove(
+                "hidden"
+            );
+        }
+    }
 
 
-        <p class="small">
-        ${esc(x.description || '')}
-        </p>
+    /* -------------------------
+       PRODUCTS
+    ------------------------- */
+
+    const {
+        data: products,
+        error: productError
+    } = await sb
+        .from("products")
+        .select("*")
+        .eq(
+            "business_id",
+            business.id
+        )
+        .eq(
+            "active",
+            true
+        );
 
 
-        <div class="price">
+    if (productError) {
 
-        ₹${Number(
-            x.price || 0
-        ).toLocaleString('en-IN')}
+        console.error(productError);
 
-        </div>
+        $("plist").innerHTML =
+            "<div class='empty'>Unable to load products.</div>";
 
+    } else {
 
-        <button
-        class="btn orange"
-        onclick="customer(
-            'order',
-            ${JSON.stringify(x.name)}
-        )">
+        $("plist").innerHTML =
+            products && products.length
 
-        🛒 Order Now
+                ? products.map(product => `
 
-        </button>
+                <div class="card item">
 
-        </div>
+                    ${
+                        product.image_url
 
-        `).join('')
+                        ? `
+                        <img
+                            class="product-image"
+                            src="${esc(product.image_url)}"
+                            alt="${esc(product.name)}"
+                        >
+                        `
 
-        ||
+                        : ""
+                    }
 
-        '<div class="empty">No products available.</div>';
+                    <h3>
+                        ${esc(product.name)}
+                    </h3>
 
+                    <p class="small">
+                        ${esc(
+                            product.description || ""
+                        )}
+                    </p>
 
-    /* SERVICES */
+                    <div class="price">
+                        ₹${Number(
+                            product.price || 0
+                        ).toLocaleString("en-IN")}
+                    </div>
 
-    $('slist').innerHTML =
-        (s.data || []).map(x => `
+                    <button
+                        class="btn orange"
+                        onclick='orderProduct(${JSON.stringify(product.name)})'
+                    >
+                        🛒 Order Now
+                    </button>
 
-        <div class="card item">
+                </div>
 
-        <h3>
-        🛠️ ${esc(x.name)}
-        </h3>
+                `).join("")
 
-
-        <p class="small">
-        ${esc(x.description || '')}
-        </p>
-
-
-        <div class="price">
-
-        ₹${Number(
-            x.price || 0
-        ).toLocaleString('en-IN')}
-
-        </div>
-
-
-        <button
-        class="btn orange"
-        onclick="customer(
-            'booking',
-            ${JSON.stringify(x.name)}
-        )">
-
-        📅 Book Appointment
-
-        </button>
-
-        </div>
-
-        `).join('')
-
-        ||
-
-        '<div class="empty">No services available.</div>';
+                : "<div class='empty'>No products available.</div>";
+    }
 
 
-    $('loading')
-        .classList
-        .add('hidden');
+    /* -------------------------
+       SERVICES
+    ------------------------- */
+
+    const {
+        data: services,
+        error: serviceError
+    } = await sb
+        .from("services")
+        .select("*")
+        .eq(
+            "business_id",
+            business.id
+        )
+        .eq(
+            "active",
+            true
+        );
 
 
-    $('app')
-        .classList
-        .remove('hidden');
+    if (serviceError) {
+
+        console.error(serviceError);
+
+        $("slist").innerHTML =
+            "<div class='empty'>Unable to load services.</div>";
+
+    } else {
+
+        $("slist").innerHTML =
+            services && services.length
+
+                ? services.map(service => `
+
+                <div class="card item">
+
+                    <h3>
+                        🛠️ ${esc(service.name)}
+                    </h3>
+
+                    <p class="small">
+                        ${esc(
+                            service.description || ""
+                        )}
+                    </p>
+
+                    <div class="price">
+                        ₹${Number(
+                            service.price || 0
+                        ).toLocaleString("en-IN")}
+                    </div>
+
+                    <button
+                        class="btn orange"
+                        onclick='bookService(${JSON.stringify(service.name)})'
+                    >
+                        📅 Book Appointment
+                    </button>
+
+                </div>
+
+                `).join("")
+
+                : "<div class='empty'>No services available.</div>";
+    }
+
+
+    /* SHOW WEBSITE */
+
+    $("loading").classList.add(
+        "hidden"
+    );
+
+
+    $("app").classList.remove(
+        "hidden"
+    );
 }
 
 
-window.customer = customer;
+/* -------------------------
+   AUTH CHANGE
+------------------------- */
 
+sb.auth.onAuthStateChange(
+    () => {
+
+        updateCustomerLogin();
+
+    }
+);
+
+
+/* START */
 
 init();
