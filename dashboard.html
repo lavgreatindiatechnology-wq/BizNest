@@ -1,1 +1,288 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Owner Dashboard</title><link rel="stylesheet" href="assets/css/style.css"></head><body><nav class="nav"><div class="brand">⚡ Owner Panel</div><div class="row"><button id="openSite" class="btn orange">Open Public Site</button><button id="logout" class="btn">Logout</button></div></nav><main class="wrap"><div class="topline"><div><h1 id="welcome">Business Dashboard</h1><p id="publicStatus" class="small"></p></div></div><div class="tabs"><button class="btn orange" onclick="showTab('business')">Business</button><button class="btn" onclick="showTab('products')">Products</button><button class="btn" onclick="showTab('services')">Services</button><button class="btn" onclick="showTab('requests')">Orders & Bookings</button></div><section id="business"><div class="card"><h2>Business Information</h2><input id="bname" class="input" placeholder="Business Name"><input id="slug" class="input" placeholder="Website URL name e.g. india-fish-shop"><input id="tagline" class="input" placeholder="Tagline"><input id="phone" class="input" placeholder="Phone"><input id="bemail" class="input" placeholder="Business Email"><textarea id="address" placeholder="Address"></textarea><button id="saveBusiness" class="btn orange">Save Business & Create Website</button><p id="bmsg" class="msg"></p><div id="shareBox" class="hidden"><h3>Your Public Website</h3><div class="copybox"><input id="publicUrl" readonly><button id="copyUrl" class="btn">Copy URL</button></div></div></div></section><section id="products" class="hidden"><div class="card"><h2>Add Product</h2><input id="pname" class="input" placeholder="Product Name"><textarea id="pdesc" placeholder="Description"></textarea><input id="pprice" class="input" type="number" placeholder="Price"><input id="pimage" class="input" placeholder="Image URL (optional)"><button id="addProduct" class="btn orange">Add Product</button><p id="pmsg" class="msg"></p></div><div id="productList" class="grid section-title"></div></section><section id="services" class="hidden"><div class="card"><h2>Add Service</h2><input id="sname" class="input" placeholder="Service Name"><textarea id="sdesc" placeholder="Description"></textarea><input id="sprice" class="input" type="number" placeholder="Price"><button id="addService" class="btn orange">Add Service</button><p id="smsg" class="msg"></p></div><div id="serviceList" class="grid section-title"></div></section><section id="requests" class="hidden"><div id="requestList"></div></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="assets/js/config.js"></script><script src="assets/js/dashboard.js"></script></body></html>
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Owner Dashboard - BizNest</title>
+
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+
+<nav class="nav">
+<div class="brand">⚡ Owner Panel</div>
+
+<div class="row">
+<button id="openSite" class="btn orange">🌐 Open Public Site</button>
+<button id="logout" class="btn">Logout</button>
+</div>
+</nav>
+
+
+<main class="wrap">
+
+<div class="topline">
+
+<div>
+<h1 id="welcome">Business Dashboard</h1>
+<p id="publicStatus" class="small"></p>
+</div>
+
+</div>
+
+
+<div class="tabs">
+
+<button class="btn orange" onclick="showTab('business')">
+🏢 Business
+</button>
+
+<button class="btn" onclick="showTab('products')">
+🛍️ Products
+</button>
+
+<button class="btn" onclick="showTab('services')">
+🛠️ Services
+</button>
+
+<button class="btn" onclick="showTab('requests')">
+📋 Orders & Bookings
+</button>
+
+</div>
+
+
+<!-- BUSINESS -->
+
+<section id="business">
+
+<div class="card">
+
+<h2>🏢 Business Information</h2>
+
+
+<label><b>Business Logo</b></label>
+
+<input
+id="logoFile"
+class="input"
+type="file"
+accept="image/*"
+>
+
+
+<div id="logoPreviewBox" class="hidden">
+
+<p class="small">Current Logo:</p>
+
+<img
+id="logoPreview"
+style="width:120px;height:120px;object-fit:cover;border-radius:18px;border:1px solid #ddd"
+>
+
+</div>
+
+
+<input
+id="bname"
+class="input"
+placeholder="Business Name"
+>
+
+
+<input
+id="slug"
+class="input"
+placeholder="Website URL name e.g. india-fish-shop"
+>
+
+
+<input
+id="tagline"
+class="input"
+placeholder="Tagline"
+>
+
+
+<input
+id="phone"
+class="input"
+placeholder="Phone"
+>
+
+
+<input
+id="bemail"
+class="input"
+placeholder="Business Email"
+>
+
+
+<textarea
+id="address"
+placeholder="Address"
+></textarea>
+
+
+<button id="saveBusiness" class="btn orange">
+
+💾 Save Business & Create Website
+
+</button>
+
+
+<p id="bmsg" class="msg"></p>
+
+
+<div id="shareBox" class="hidden">
+
+<h3>🌐 Your Public Website</h3>
+
+<div class="copybox">
+
+<input id="publicUrl" readonly>
+
+<button id="copyUrl" class="btn">
+📋 Copy URL
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+
+<!-- PRODUCTS -->
+
+<section id="products" class="hidden">
+
+<div class="card">
+
+<h2>🛍️ Add Product</h2>
+
+
+<input
+id="pname"
+class="input"
+placeholder="Product Name"
+>
+
+
+<textarea
+id="pdesc"
+placeholder="Product Description"
+></textarea>
+
+
+<input
+id="pprice"
+class="input"
+type="number"
+placeholder="Price"
+>
+
+
+<label><b>📷 Upload Product Image</b></label>
+
+<input
+id="pimage"
+class="input"
+type="file"
+accept="image/*"
+>
+
+
+<img
+id="productPreview"
+class="hidden"
+style="width:100%;max-height:220px;object-fit:cover;border-radius:14px;margin:10px 0"
+>
+
+
+<button id="addProduct" class="btn orange">
+
+➕ Add Product
+
+</button>
+
+
+<p id="pmsg" class="msg"></p>
+
+</div>
+
+
+<div id="productList" class="grid section-title"></div>
+
+</section>
+
+
+
+<!-- SERVICES -->
+
+<section id="services" class="hidden">
+
+<div class="card">
+
+<h2>🛠️ Add Service</h2>
+
+<input
+id="sname"
+class="input"
+placeholder="Service Name"
+>
+
+<textarea
+id="sdesc"
+placeholder="Description"
+></textarea>
+
+<input
+id="sprice"
+class="input"
+type="number"
+placeholder="Price"
+>
+
+<button id="addService" class="btn orange">
+➕ Add Service
+</button>
+
+<p id="smsg" class="msg"></p>
+
+</div>
+
+
+<div id="serviceList" class="grid section-title"></div>
+
+</section>
+
+
+
+<!-- REQUESTS -->
+
+<section id="requests" class="hidden">
+
+<h2>📋 Customer Orders & Bookings</h2>
+
+<div id="requestList"></div>
+
+</section>
+
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="assets/js/config.js"></script>
+
+<script src="assets/js/dashboard.js"></script>
+
+</body>
+</html>
