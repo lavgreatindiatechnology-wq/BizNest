@@ -1,0 +1,3 @@
+const $=x=>document.getElementById(x);const say=t=>{$("msg").textContent=t};
+if($("loginBtn"))$("loginBtn").onclick=async()=>{const {error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error)say("❌ "+error.message);else location.href="dashboard.html"};
+if($("registerBtn"))$("registerBtn").onclick=async()=>{const name=$("name").value.trim(),email=$("email").value.trim(),password=$("password").value;if(!name||!email||!password)return say("⚠️ Please fill all fields");const {data,error}=await sb.auth.signUp({email,password,options:{data:{name,role:"owner"}}});if(error)return say("❌ "+error.message);if(data.session)location.href="dashboard.html";else say("✅ Account created. Please confirm your email, then login.");};
