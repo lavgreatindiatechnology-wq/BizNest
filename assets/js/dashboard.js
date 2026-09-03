@@ -1,1 +1,1009 @@
-const $=id=>document.getElementById(id);let user,business;async function start(){const{data:{user:u}}=await sb.auth.getUser();if(!u)return location.href="login.html";user=u;$("welcome").textContent="Welcome, "+(u.user_metadata?.name||u.email);const{data}=await sb.from("businesses").select("*").eq("owner_id",u.id).maybeSingle();business=data;if(business){for(const[k,id]of Object.entries({name:"businessName",slug:"slug",tagline:"tagline",phone:"phone",email:"businessEmail",address:"address"}))$(id).value=business[k]||"";if(business.logo_url){$("logoPreview").src=business.logo_url;$("logoPreview").classList.remove("hidden")}}loadProducts();loadServices();loadRequests()}async function upload(file,path){if(!file)return null;const key=path+"-"+Date.now()+"."+file.name.split(".").pop();const{error}=await sb.storage.from("business-assets").upload(key,file);if(error)throw error;return sb.storage.from("business-assets").getPublicUrl(key).data.publicUrl}$("saveBusiness").onclick=async()=>{try{const name=$("businessName").value.trim(),slug=$("slug").value.trim().toLowerCase().replace(/\s+/g,"-");if(!name||!slug)throw Error("Business name and public URL name required");let logo_url=business?.logo_url||null;if($("logoFile").files[0])logo_url=await upload($("logoFile").files[0],"logos/"+user.id);const row={owner_id:user.id,name,slug,tagline:$("tagline").value.trim(),phone:$("phone").value.trim(),email:$("businessEmail").value.trim(),address:$("address").value.trim(),logo_url};let r=business?await sb.from("businesses").update(row).eq("id",business.id):await sb.from("businesses").insert(row).select().single();if(r.error)throw r.error;business=r.data||business|| (await sb.from("businesses").select("*").eq("owner_id",user.id).single()).data;$("businessMsg").textContent="✅ Business saved";loadRequests()}catch(e){$("businessMsg").textContent="❌ "+e.message}};$("openSite").onclick=()=>business?.slug?open("site.html?slug="+business.slug,"_blank"):alert("Save business first");$("logout").onclick=async()=>{await sb.auth.signOut();location.href="index.html"};$("addProduct").onclick=async()=>{try{if(!business)throw Error("Save business first");const name=$("productName").value.trim();if(!name)throw Error("Product name required");let image_url=null;if($("productImage").files[0])image_url=await upload($("productImage").files[0],"products/"+business.id);const{error}=await sb.from("products").insert({business_id:business.id,name,price:Number($("productPrice").value||0),description:$("productDescription").value.trim(),image_url,active:true});if(error)throw error;$("productMsg").textContent="✅ Product added";loadProducts()}catch(e){$("productMsg").textContent="❌ "+e.message}};$("addService").onclick=async()=>{try{if(!business)throw Error("Save business first");const name=$("serviceName").value.trim();if(!name)throw Error("Service name required");const{error}=await sb.from("services").insert({business_id:business.id,name,price:Number($("servicePrice").value||0),description:$("serviceDescription").value.trim(),active:true});if(error)throw error;$("serviceMsg").textContent="✅ Service added";loadServices()}catch(e){$("serviceMsg").textContent="❌ "+e.message}};async function loadProducts(){if(!business)return;$("productList").innerHTML=(await sb.from("products").select("*").eq("business_id",business.id)).data?.map(x=>`<div class="card"><h3>${x.name}</h3><button class="btn danger" onclick="delProduct('${x.id}')">Delete</button></div>`).join("")||"No products"}window.delProduct=async id=>{if(confirm("Delete product?")){await sb.from("products").delete().eq("id",id);loadProducts()}};async function loadServices(){if(!business)return;$("serviceList").innerHTML=(await sb.from("services").select("*").eq("business_id",business.id)).data?.map(x=>`<div class="card"><h3>${x.name}</h3><button class="btn danger" onclick="delService('${x.id}')">Delete</button></div>`).join("")||"No services"}window.delService=async id=>{if(confirm("Delete service?")){await sb.from("services").delete().eq("id",id);loadServices()}};async function loadRequests(){if(!business){$("requestList").textContent="Save business first";return}const{data,error}=await sb.from("requests").select("*").eq("business_id",business.id).order("created_at",{ascending:false});if(error){$("requestList").textContent="❌ "+error.message;return}$("requestList").innerHTML=data?.length?data.map(r=>`<div class="card"><div class="request-head"><div><h3>${r.type==="order"?"🛒 Product Order":"📅 Service Booking"}</h3><b>${r.item_name||""}</b></div><span class="status ${r.status||"pending"}">${(r.status||"pending").replaceAll("_"," ")}</span></div><p>👤 ${r.customer_name}</p><p>📞 ${r.customer_phone||"-"}</p><p>💬 ${r.note||"-"}</p><div class="action-buttons"><button class="btn orange" onclick="status('${r.id}','accepted')">✅ Accept</button><button class="btn danger" onclick="status('${r.id}','rejected')">❌ Reject</button><button class="btn" onclick="status('${r.id}','processing')">📦 Processing</button><button class="btn" onclick="status('${r.id}','out_for_delivery')">🚚 Out for Delivery</button><button class="btn dark" onclick="status('${r.id}','delivered')">📦 Delivered</button><button class="btn" onclick="status('${r.id}','completed')">🏁 Completed</button></div></div>`).join(""):"No orders or bookings yet"}window.status=async(id,status)=>{if(!confirm("Change status to "+status.replaceAll("_"," ")+"?"))return;const{error}=await sb.from("requests").update({status}).eq("id",id);if(error)return alert(error.message);loadRequests()};document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));t.classList.add("active");$(t.dataset.tab).classList.add("active")});start();
+const $ = (id) => document.getElementById(id);
+
+let currentUser = null;
+let currentBusiness = null;
+
+
+/* =========================================
+   START DASHBOARD
+========================================= */
+
+async function startDashboard() {
+
+    const {
+        data: { user },
+        error
+    } = await sb.auth.getUser();
+
+    if (error || !user) {
+        location.href = "login.html";
+        return;
+    }
+
+    currentUser = user;
+
+    $("welcome").textContent =
+        "Welcome, " +
+        (
+            user.user_metadata?.name ||
+            user.email
+        );
+
+    await loadBusiness();
+    await loadProducts();
+    await loadServices();
+    await loadRequests();
+}
+
+
+/* =========================================
+   LOAD BUSINESS
+========================================= */
+
+async function loadBusiness() {
+
+    const { data, error } = await sb
+        .from("businesses")
+        .select("*")
+        .eq("owner_id", currentUser.id)
+        .maybeSingle();
+
+    if (error) {
+        console.error(error);
+        return;
+    }
+
+    currentBusiness = data;
+
+    if (!currentBusiness) return;
+
+    $("businessName").value =
+        currentBusiness.name || "";
+
+    $("slug").value =
+        currentBusiness.slug || "";
+
+    $("tagline").value =
+        currentBusiness.tagline || "";
+
+    $("phone").value =
+        currentBusiness.phone || "";
+
+    $("businessEmail").value =
+        currentBusiness.email || "";
+
+    $("address").value =
+        currentBusiness.address || "";
+
+    if (currentBusiness.logo_url) {
+
+        $("logoPreview").src =
+            currentBusiness.logo_url;
+
+        $("logoPreview")
+            .classList
+            .remove("hidden");
+    }
+}
+
+
+/* =========================================
+   IMAGE UPLOAD
+========================================= */
+
+async function uploadImage(file, folder) {
+
+    if (!file) return null;
+
+    const extension =
+        file.name.split(".").pop();
+
+    const fileName =
+        folder +
+        "/" +
+        Date.now() +
+        "-" +
+        Math.random()
+            .toString(36)
+            .substring(2)
+        +
+        "." +
+        extension;
+
+    const { error } = await sb
+        .storage
+        .from("business-assets")
+        .upload(fileName, file);
+
+    if (error) {
+        throw error;
+    }
+
+    const {
+        data
+    } = sb
+        .storage
+        .from("business-assets")
+        .getPublicUrl(fileName);
+
+    return data.publicUrl;
+}
+
+
+/* =========================================
+   SAVE BUSINESS
+========================================= */
+
+$("saveBusiness").addEventListener(
+    "click",
+    async function () {
+
+        try {
+
+            const name =
+                $("businessName").value.trim();
+
+            const slug =
+                $("slug")
+                    .value
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, "-");
+
+            if (!name) {
+                throw new Error(
+                    "Business name required"
+                );
+            }
+
+            if (!slug) {
+                throw new Error(
+                    "Public URL name required"
+                );
+            }
+
+            let logoUrl =
+                currentBusiness?.logo_url || null;
+
+            const logoFile =
+                $("logoFile").files[0];
+
+            if (logoFile) {
+
+                logoUrl =
+                    await uploadImage(
+                        logoFile,
+                        "logos"
+                    );
+            }
+
+
+            const businessData = {
+
+                owner_id:
+                    currentUser.id,
+
+                name: name,
+
+                slug: slug,
+
+                tagline:
+                    $("tagline").value.trim(),
+
+                phone:
+                    $("phone").value.trim(),
+
+                email:
+                    $("businessEmail")
+                        .value
+                        .trim(),
+
+                address:
+                    $("address")
+                        .value
+                        .trim(),
+
+                logo_url:
+                    logoUrl
+            };
+
+
+            if (currentBusiness) {
+
+                const { error } = await sb
+                    .from("businesses")
+                    .update(businessData)
+                    .eq(
+                        "id",
+                        currentBusiness.id
+                    );
+
+                if (error) throw error;
+
+            } else {
+
+                const {
+                    data,
+                    error
+                } = await sb
+                    .from("businesses")
+                    .insert(businessData)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                currentBusiness = data;
+            }
+
+
+            $("businessMsg").textContent =
+                "✅ Business saved successfully";
+
+            await loadBusiness();
+            await loadRequests();
+
+        } catch (error) {
+
+            console.error(error);
+
+            $("businessMsg").textContent =
+                "❌ " + error.message;
+        }
+
+    }
+);
+
+
+/* =========================================
+   ADD PRODUCT
+========================================= */
+
+$("addProduct").addEventListener(
+    "click",
+    async function () {
+
+        try {
+
+            if (!currentBusiness) {
+
+                throw new Error(
+                    "Please save your business first"
+                );
+            }
+
+
+            const name =
+                $("productName").value.trim();
+
+            if (!name) {
+
+                throw new Error(
+                    "Product name required"
+                );
+            }
+
+
+            let imageUrl = null;
+
+            const imageFile =
+                $("productImage").files[0];
+
+            if (imageFile) {
+
+                imageUrl =
+                    await uploadImage(
+                        imageFile,
+                        "products"
+                    );
+            }
+
+
+            const { error } = await sb
+                .from("products")
+                .insert({
+
+                    business_id:
+                        currentBusiness.id,
+
+                    name: name,
+
+                    price:
+                        Number(
+                            $("productPrice").value || 0
+                        ),
+
+                    description:
+                        $("productDescription")
+                            .value
+                            .trim(),
+
+                    image_url:
+                        imageUrl,
+
+                    active: true
+                });
+
+
+            if (error) throw error;
+
+
+            $("productMsg").textContent =
+                "✅ Product added successfully";
+
+
+            $("productName").value = "";
+            $("productPrice").value = "";
+            $("productDescription").value = "";
+            $("productImage").value = "";
+
+
+            await loadProducts();
+
+        } catch (error) {
+
+            console.error(error);
+
+            $("productMsg").textContent =
+                "❌ " + error.message;
+        }
+
+    }
+);
+
+
+/* =========================================
+   LOAD PRODUCTS
+========================================= */
+
+async function loadProducts() {
+
+    if (!currentBusiness) {
+
+        $("productList").innerHTML =
+            "Please save your business first.";
+
+        return;
+    }
+
+
+    const {
+        data,
+        error
+    } = await sb
+        .from("products")
+        .select("*")
+        .eq(
+            "business_id",
+            currentBusiness.id
+        )
+        .order(
+            "created_at",
+            { ascending: false }
+        );
+
+
+    if (error) {
+
+        $("productList").textContent =
+            "❌ " + error.message;
+
+        return;
+    }
+
+
+    if (!data || data.length === 0) {
+
+        $("productList").innerHTML =
+            "No products yet.";
+
+        return;
+    }
+
+
+    $("productList").innerHTML =
+        data.map(product => `
+
+            <div class="card">
+
+                ${
+                    product.image_url
+                        ? `<img
+                            src="${product.image_url}"
+                            class="product-image"
+                          >`
+                        : ""
+                }
+
+                <h3>${product.name}</h3>
+
+                <p>
+                    ${product.description || ""}
+                </p>
+
+                <div class="price">
+                    ₹${product.price || 0}
+                </div>
+
+                <button
+                    class="btn danger"
+                    onclick="deleteProduct('${product.id}')"
+                >
+                    Delete
+                </button>
+
+            </div>
+
+        `).join("");
+}
+
+
+/* =========================================
+   DELETE PRODUCT
+========================================= */
+
+window.deleteProduct =
+async function (id) {
+
+    if (!confirm("Delete this product?")) {
+        return;
+    }
+
+
+    const { error } = await sb
+        .from("products")
+        .delete()
+        .eq("id", id);
+
+
+    if (error) {
+
+        alert(
+            "❌ " + error.message
+        );
+
+        return;
+    }
+
+
+    await loadProducts();
+};
+
+
+/* =========================================
+   ADD SERVICE
+========================================= */
+
+$("addService").addEventListener(
+    "click",
+    async function () {
+
+        try {
+
+            if (!currentBusiness) {
+
+                throw new Error(
+                    "Please save your business first"
+                );
+            }
+
+
+            const name =
+                $("serviceName").value.trim();
+
+            if (!name) {
+
+                throw new Error(
+                    "Service name required"
+                );
+            }
+
+
+            const { error } = await sb
+                .from("services")
+                .insert({
+
+                    business_id:
+                        currentBusiness.id,
+
+                    name: name,
+
+                    price:
+                        Number(
+                            $("servicePrice").value || 0
+                        ),
+
+                    description:
+                        $("serviceDescription")
+                            .value
+                            .trim(),
+
+                    active: true
+                });
+
+
+            if (error) throw error;
+
+
+            $("serviceMsg").textContent =
+                "✅ Service added successfully";
+
+
+            $("serviceName").value = "";
+            $("servicePrice").value = "";
+            $("serviceDescription").value = "";
+
+
+            await loadServices();
+
+        } catch (error) {
+
+            console.error(error);
+
+            $("serviceMsg").textContent =
+                "❌ " + error.message;
+        }
+
+    }
+);
+
+
+/* =========================================
+   LOAD SERVICES
+========================================= */
+
+async function loadServices() {
+
+    if (!currentBusiness) {
+
+        $("serviceList").innerHTML =
+            "Please save your business first.";
+
+        return;
+    }
+
+
+    const {
+        data,
+        error
+    } = await sb
+        .from("services")
+        .select("*")
+        .eq(
+            "business_id",
+            currentBusiness.id
+        )
+        .order(
+            "created_at",
+            { ascending: false }
+        );
+
+
+    if (error) {
+
+        $("serviceList").textContent =
+            "❌ " + error.message;
+
+        return;
+    }
+
+
+    if (!data || data.length === 0) {
+
+        $("serviceList").innerHTML =
+            "No services yet.";
+
+        return;
+    }
+
+
+    $("serviceList").innerHTML =
+        data.map(service => `
+
+            <div class="card">
+
+                <h3>${service.name}</h3>
+
+                <p>
+                    ${service.description || ""}
+                </p>
+
+                <div class="price">
+                    ₹${service.price || 0}
+                </div>
+
+                <button
+                    class="btn danger"
+                    onclick="deleteService('${service.id}')"
+                >
+                    Delete
+                </button>
+
+            </div>
+
+        `).join("");
+}
+
+
+/* =========================================
+   DELETE SERVICE
+========================================= */
+
+window.deleteService =
+async function (id) {
+
+    if (!confirm("Delete this service?")) {
+        return;
+    }
+
+
+    const { error } = await sb
+        .from("services")
+        .delete()
+        .eq("id", id);
+
+
+    if (error) {
+
+        alert(
+            "❌ " + error.message
+        );
+
+        return;
+    }
+
+
+    await loadServices();
+};
+
+
+/* =========================================
+   LOAD ORDERS & BOOKINGS
+========================================= */
+
+async function loadRequests() {
+
+    if (!currentBusiness) {
+
+        $("requestList").innerHTML =
+            "Please save your business first.";
+
+        return;
+    }
+
+
+    const {
+        data,
+        error
+    } = await sb
+        .from("requests")
+        .select("*")
+        .eq(
+            "business_id",
+            currentBusiness.id
+        )
+        .order(
+            "created_at",
+            { ascending: false }
+        );
+
+
+    if (error) {
+
+        console.error(error);
+
+        $("requestList").innerHTML =
+            "❌ ERROR: " + error.message;
+
+        return;
+    }
+
+
+    if (!data || data.length === 0) {
+
+        $("requestList").innerHTML =
+            "<p>No orders or bookings yet.</p>";
+
+        return;
+    }
+
+
+    $("requestList").innerHTML =
+        data.map(request => {
+
+            const requestType =
+                request.type === "order"
+                    ? "🛒 Product Order"
+                    : "📅 Service Booking";
+
+
+            const currentStatus =
+                request.status || "pending";
+
+
+            return `
+
+                <div class="card request-card">
+
+                    <div class="request-head">
+
+                        <div>
+
+                            <h3>
+                                ${requestType}
+                            </h3>
+
+                            <b>
+                                ${request.item_name || ""}
+                            </b>
+
+                        </div>
+
+
+                        <span
+                            class="status ${currentStatus}"
+                        >
+
+                            ${currentStatus
+                                .replaceAll("_", " ")
+                            }
+
+                        </span>
+
+                    </div>
+
+
+                    <p>
+                        👤 ${request.customer_name || ""}
+                    </p>
+
+
+                    <p>
+                        📞 ${request.customer_phone || "-"}
+                    </p>
+
+
+                    <p>
+                        💬 ${request.note || "-"}
+                    </p>
+
+
+                    <div class="action-buttons">
+
+                        <button
+                            class="btn orange"
+                            onclick="updateRequestStatus('${request.id}', 'accepted')"
+                        >
+                            ✅ Accept
+                        </button>
+
+
+                        <button
+                            class="btn danger"
+                            onclick="updateRequestStatus('${request.id}', 'rejected')"
+                        >
+                            ❌ Reject
+                        </button>
+
+
+                        <button
+                            class="btn"
+                            onclick="updateRequestStatus('${request.id}', 'processing')"
+                        >
+                            📦 Processing
+                        </button>
+
+
+                        <button
+                            class="btn"
+                            onclick="updateRequestStatus('${request.id}', 'out_for_delivery')"
+                        >
+                            🚚 Out for Delivery
+                        </button>
+
+
+                        <button
+                            class="btn dark"
+                            onclick="updateRequestStatus('${request.id}', 'delivered')"
+                        >
+                            📦 Delivered
+                        </button>
+
+
+                        <button
+                            class="btn"
+                            onclick="updateRequestStatus('${request.id}', 'completed')"
+                        >
+                            🏁 Completed
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }).join("");
+}
+
+
+/* =========================================
+   FIXED REQUEST STATUS UPDATE
+========================================= */
+
+window.updateRequestStatus =
+async function (requestId, newStatus) {
+
+    try {
+
+        console.log(
+            "Updating request:",
+            requestId,
+            newStatus
+        );
+
+
+        const confirmUpdate =
+            confirm(
+                "Change status to: " +
+                newStatus.replaceAll("_", " ") +
+                " ?"
+            );
+
+
+        if (!confirmUpdate) {
+            return;
+        }
+
+
+        const {
+            data,
+            error
+        } = await sb
+            .from("requests")
+            .update({
+                status: newStatus
+            })
+            .eq("id", requestId)
+            .select();
+
+
+        if (error) {
+
+            console.error(error);
+
+            alert(
+                "❌ Status update failed:\n\n" +
+                error.message
+            );
+
+            return;
+        }
+
+
+        if (!data || data.length === 0) {
+
+            alert(
+                "❌ Status update नहीं हुआ। Permission या Request ID की समस्या हो सकती है।"
+            );
+
+            return;
+        }
+
+
+        alert(
+            "✅ Status updated successfully!"
+        );
+
+
+        await loadRequests();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "❌ ERROR:\n\n" +
+            error.message
+        );
+    }
+};
+
+
+/* =========================================
+   TABS
+========================================= */
+
+document
+    .querySelectorAll(".tab")
+    .forEach(tab => {
+
+        tab.addEventListener(
+            "click",
+            function () {
+
+                document
+                    .querySelectorAll(".tab")
+                    .forEach(button =>
+                        button.classList.remove("active")
+                    );
+
+
+                document
+                    .querySelectorAll(".panel")
+                    .forEach(panel =>
+                        panel.classList.remove("active")
+                    );
+
+
+                tab.classList.add("active");
+
+
+                const panel =
+                    document.getElementById(
+                        tab.dataset.tab
+                    );
+
+
+                if (panel) {
+
+                    panel.classList.add("active");
+                }
+
+            }
+        );
+
+    });
+
+
+/* =========================================
+   OPEN PUBLIC WEBSITE
+========================================= */
+
+$("openSite").addEventListener(
+    "click",
+    function () {
+
+        if (!currentBusiness) {
+
+            alert(
+                "Please save your business first."
+            );
+
+            return;
+        }
+
+
+        window.open(
+            "site.html?slug=" +
+            encodeURIComponent(
+                currentBusiness.slug
+            ),
+            "_blank"
+        );
+
+    }
+);
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+$("logout").addEventListener(
+    "click",
+    async function () {
+
+        await sb.auth.signOut();
+
+        location.href = "index.html";
+
+    }
+);
+
+
+/* =========================================
+   START
+========================================= */
+
+startDashboard();
