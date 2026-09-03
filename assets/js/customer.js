@@ -1,9 +1,9 @@
 const $ = (id) => document.getElementById(id);
 
 
-// =========================================
-// GET URL DATA
-// =========================================
+// =============================================
+// URL PARAMETERS
+// =============================================
 
 const params =
     new URLSearchParams(window.location.search);
@@ -11,261 +11,261 @@ const params =
 const slug =
     params.get("slug");
 
-const type =
-    params.get("type") || "general";
+const requestType =
+    params.get("type") || "";
 
 const item =
-    params.get("item") || "General Request";
+    params.get("item") || "";
 
 
-// =========================================
+// =============================================
 // BACK URL
-// =========================================
+// =============================================
 
 const backUrl = slug
     ? "site.html?slug=" +
       encodeURIComponent(slug)
     : "index.html";
 
-$("back").href = backUrl;
 
-
-// =========================================
-// GET CUSTOMER NAME
-// =========================================
-
-function getCustomerName(user) {
-
-    return (
-        user?.user_metadata?.name ||
-        user?.email?.split("@")[0] ||
-        "Customer"
-    );
+if ($("back")) {
+    $("back").href = backUrl;
 }
 
 
-// =========================================
-// LOAD PAGE
-// =========================================
+// =============================================
+// SHOW MESSAGE
+// =============================================
+
+function message(id, text) {
+
+    const el = $(id);
+
+    if (el) {
+        el.textContent = text;
+    }
+}
+
+
+// =============================================
+// GET CURRENT USER
+// =============================================
+
+async function getUser() {
+
+    const {
+        data: { user },
+        error
+    } = await sb.auth.getUser();
+
+    if (error) return null;
+
+    return user;
+}
+
+
+// =============================================
+// LOAD CUSTOMER PAGE
+// =============================================
 
 async function loadPage() {
 
-    try {
-
-        const {
-            data: { user }
-        } = await sb.auth.getUser();
+    const user =
+        await getUser();
 
 
-        // NOT LOGGED IN
-
-        if (!user) {
-
-            $("authSection")
-                .classList
-                .remove("hidden");
-
-            $("requestSection")
-                .classList
-                .add("hidden");
-
-            return;
-        }
-
-
-        // LOGGED IN
+    if (!user) {
 
         $("authSection")
-            .classList
-            .add("hidden");
-
-        $("requestSection")
-            .classList
+            ?.classList
             .remove("hidden");
 
+        $("requestSection")
+            ?.classList
+            .add("hidden");
 
-        const name =
-            getCustomerName(user);
+        return;
+    }
 
+
+    $("authSection")
+        ?.classList
+        .add("hidden");
+
+    $("requestSection")
+        ?.classList
+        .remove("hidden");
+
+
+    const name =
+        user.user_metadata?.name ||
+        user.email?.split("@")[0] ||
+        "Customer";
+
+
+    if ($("welcomeCustomer")) {
 
         $("welcomeCustomer").textContent =
             "👋 Welcome, " + name;
+    }
 
+
+    if ($("cname")) {
 
         $("cname").value = name;
+    }
 
 
-        // PRODUCT ORDER
+    // ORDER
 
-        if (type === "order") {
+    if (requestType === "order") {
 
+        if ($("title")) {
             $("title").textContent =
-                "Place Your Order";
+                "🛒 Confirm Your Order";
+        }
 
+        if ($("requestInfo")) {
 
-            $("requestInfo").innerHTML =
-                "🛒 <b>Product Order:</b> " +
-                item;
+            $("requestInfo").textContent =
+                "Product: " + item;
+        }
 
+        if ($("send")) {
 
             $("send").textContent =
                 "🛒 Confirm Order";
         }
+    }
 
 
-        // SERVICE BOOKING
+    // BOOKING
 
-        else if (type === "booking") {
+    else if (requestType === "booking") {
 
+        if ($("title")) {
             $("title").textContent =
-                "Book Appointment";
+                "📅 Confirm Appointment";
+        }
 
+        if ($("requestInfo")) {
 
-            $("requestInfo").innerHTML =
-                "📅 <b>Service Booking:</b> " +
-                item;
+            $("requestInfo").textContent =
+                "Service: " + item;
+        }
 
+        if ($("send")) {
 
             $("send").textContent =
                 "📅 Confirm Booking";
         }
-
-
-        // GENERAL
-
-        else {
-
-            $("requestInfo").textContent =
-                "Send your request.";
-
-            $("send").textContent =
-                "Send Request";
-        }
-
-
-        await loadHistory();
-
     }
 
-    catch (error) {
 
-        console.error(error);
-    }
+    await loadHistory();
 }
 
 
-// =========================================
-// CUSTOMER LOGIN
-// =========================================
+// =============================================
+// LOGIN
+// =============================================
 
-$("login").addEventListener(
-    "click",
-    async function () {
+if ($("login")) {
 
-        try {
+    $("login").addEventListener(
+        "click",
+        async function () {
 
             const email =
-                $("email").value.trim();
+                $("email")?.value.trim();
 
             const password =
-                $("password").value;
+                $("password")?.value;
 
 
             if (!email || !password) {
 
-                $("msg").textContent =
-                    "❌ Email और Password डालें।";
+                message(
+                    "msg",
+                    "❌ Email और Password डालें।"
+                );
 
                 return;
             }
 
 
-            $("msg").textContent =
-                "Login हो रहा है...";
+            message(
+                "msg",
+                "⏳ Login हो रहा है..."
+            );
 
 
             const { error } =
-                await sb.auth
-                    .signInWithPassword({
+                await sb.auth.signInWithPassword({
 
-                        email: email,
+                    email: email,
 
-                        password: password
-                    });
+                    password: password
+                });
 
 
             if (error) {
 
-                throw error;
+                message(
+                    "msg",
+                    "❌ " + error.message
+                );
+
+                return;
             }
 
 
-            $("msg").textContent =
-                "✅ Login सफल!";
+            message(
+                "msg",
+                "✅ Login successful"
+            );
 
+
+            // IMPORTANT
+            // URL नहीं बदलेगा
+            // इसलिए product/service याद रहेगा
 
             await loadPage();
 
         }
-
-        catch (error) {
-
-            console.error(error);
-
-            $("msg").textContent =
-                "❌ " + error.message;
-        }
-
-    }
-);
+    );
+}
 
 
-// =========================================
-// CUSTOMER REGISTER
-// =========================================
+// =============================================
+// SIGNUP
+// =============================================
 
-$("signup").addEventListener(
-    "click",
-    async function () {
+if ($("signup")) {
 
-        try {
+    $("signup").addEventListener(
+        "click",
+        async function () {
 
             const name =
-                $("customerName").value.trim();
+                $("customerName")?.value.trim();
 
             const email =
-                $("email").value.trim();
+                $("email")?.value.trim();
 
             const password =
-                $("password").value;
+                $("password")?.value;
 
 
-            if (!name) {
+            if (!name || !email || !password) {
 
-                throw new Error(
-                    "अपना नाम डालें।"
+                message(
+                    "msg",
+                    "❌ Name, Email और Password डालें।"
                 );
+
+                return;
             }
-
-
-            if (!email) {
-
-                throw new Error(
-                    "अपना Email डालें।"
-                );
-            }
-
-
-            if (password.length < 6) {
-
-                throw new Error(
-                    "Password कम से कम 6 characters का होना चाहिए।"
-                );
-            }
-
-
-            $("msg").textContent =
-                "Account बनाया जा रहा है...";
 
 
             const {
@@ -280,10 +280,7 @@ $("signup").addEventListener(
                 options: {
 
                     data: {
-
-                        name: name,
-
-                        role: "customer"
+                        name: name
                     }
                 }
             });
@@ -291,49 +288,42 @@ $("signup").addEventListener(
 
             if (error) {
 
-                throw error;
+                message(
+                    "msg",
+                    "❌ " + error.message
+                );
+
+                return;
             }
 
 
             if (data.session) {
 
-                $("msg").textContent =
-                    "✅ Account बन गया!";
-
                 await loadPage();
 
-            }
+            } else {
 
-            else {
-
-                $("msg").textContent =
-                    "✅ Account बन गया। अब Email confirm करके Login करें।";
+                message(
+                    "msg",
+                    "✅ Account बन गया। अब Email confirm करके Login करें।"
+                );
             }
 
         }
-
-        catch (error) {
-
-            console.error(error);
-
-            $("msg").textContent =
-                "❌ " + error.message;
-        }
-
-    }
-);
+    );
+}
 
 
-// =========================================
+// =============================================
 // GET BUSINESS
-// =========================================
+// =============================================
 
 async function getBusiness() {
 
     if (!slug) {
 
         throw new Error(
-            "Business URL missing."
+            "Business link missing"
         );
     }
 
@@ -343,21 +333,18 @@ async function getBusiness() {
         error
     } = await sb
         .from("businesses")
-        .select("id,name")
+        .select("id")
         .eq("slug", slug)
         .maybeSingle();
 
 
-    if (error) {
-
-        throw error;
-    }
+    if (error) throw error;
 
 
     if (!data) {
 
         throw new Error(
-            "Business नहीं मिला।"
+            "Business not found"
         );
     }
 
@@ -366,308 +353,291 @@ async function getBusiness() {
 }
 
 
-// =========================================
+// =============================================
 // SEND ORDER / BOOKING
-// =========================================
+// =============================================
 
-$("send").addEventListener(
-    "click",
-    async function () {
+if ($("send")) {
 
-        try {
+    $("send").addEventListener(
+        "click",
+        async function () {
 
-            $("done").textContent =
-                "⏳ Processing...";
+            try {
 
-
-            const {
-                data: { user }
-            } = await sb.auth.getUser();
-
-
-            if (!user) {
-
-                throw new Error(
-                    "पहले Customer Login करें।"
+                message(
+                    "done",
+                    "⏳ Processing..."
                 );
-            }
 
 
-            const name =
-                $("cname").value.trim();
+                const user =
+                    await getUser();
 
-            const phone =
-                $("cphone").value.trim();
 
-            const note =
-                $("note").value.trim();
+                if (!user) {
 
-
-            if (!name) {
-
-                throw new Error(
-                    "अपना नाम डालें।"
-                );
-            }
-
-
-            if (!phone) {
-
-                throw new Error(
-                    "अपना Phone Number डालें।"
-                );
-            }
-
-
-            const business =
-                await getBusiness();
-
-
-            // =====================================
-            // CREATE REQUEST
-            // =====================================
-
-            const {
-                data,
-                error
-            } = await sb
-                .from("requests")
-                .insert({
-
-                    business_id:
-                        business.id,
-
-                    customer_id:
-                        user.id,
-
-                    type:
-                        type,
-
-                    item_name:
-                        item,
-
-                    customer_name:
-                        name,
-
-                    customer_phone:
-                        phone,
-
-                    note:
-                        note,
-
-                    status:
-                        "pending"
-
-                })
-                .select();
-
-
-            if (error) {
-
-                throw error;
-            }
-
-
-            if (!data || data.length === 0) {
-
-                throw new Error(
-                    "Order/Booking save नहीं हुआ।"
-                );
-            }
-
-
-            // SUCCESS
-
-            if (type === "order") {
-
-                $("done").textContent =
-                    "🎉 आपका Order Successfully हो गया!";
-
-            }
-
-            else if (type === "booking") {
-
-                $("done").textContent =
-                    "🎉 आपकी Appointment Successfully Book हो गई!";
-
-            }
-
-            else {
-
-                $("done").textContent =
-                    "🎉 Request Successfully भेज दिया गया!";
-            }
-
-
-            // DISABLE DUPLICATE CLICK
-
-            $("send").disabled = true;
-
-
-            // RELOAD HISTORY
-
-            await loadHistory();
-
-        }
-
-        catch (error) {
-
-            console.error(error);
-
-            $("done").textContent =
-                "❌ ERROR: " +
-                error.message;
-        }
-
-    }
-);
-
-
-// =========================================
-// LOAD CUSTOMER HISTORY
-// =========================================
-
-async function loadHistory() {
-
-    try {
-
-        const {
-            data: { user }
-        } = await sb.auth.getUser();
-
-
-        if (!user) return;
-
-
-        const {
-            data,
-            error
-        } = await sb
-            .from("requests")
-            .select("*")
-            .eq(
-                "customer_id",
-                user.id
-            )
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            );
-
-
-        if (error) {
-
-            throw error;
-        }
-
-
-        if (!data || data.length === 0) {
-
-            $("historyList").innerHTML =
-                "<p>अभी कोई Order या Booking नहीं है।</p>";
-
-            return;
-        }
-
-
-        $("historyList").innerHTML =
-            data.map(request => {
-
-                let requestType =
-                    "📩 Request";
-
-
-                if (request.type === "order") {
-
-                    requestType =
-                        "🛒 Product Order";
+                    throw new Error(
+                        "Customer login required"
+                    );
                 }
 
 
-                if (request.type === "booking") {
+                if (
+                    requestType !== "order" &&
+                    requestType !== "booking"
+                ) {
 
-                    requestType =
-                        "📅 Service Booking";
+                    throw new Error(
+                        "Please open this page using Order Now or Book Appointment."
+                    );
                 }
 
 
-                const status =
-                    request.status || "pending";
+                if (!item) {
+
+                    throw new Error(
+                        "Product/Service missing"
+                    );
+                }
 
 
-                return `
+                const name =
+                    $("cname")?.value.trim();
 
-                    <div class="card history-card">
+                const phone =
+                    $("cphone")?.value.trim();
 
-                        <div>
-
-                            <b>
-                                ${requestType}
-                            </b>
-
-                            <br>
-
-                            <strong>
-                                ${request.item_name || ""}
-                            </strong>
-
-                            <br>
-
-                            <small>
-                                📞 ${request.customer_phone || ""}
-                            </small>
-
-                        </div>
+                const note =
+                    $("note")?.value.trim() || "";
 
 
-                        <span
-                            class="status ${status}"
-                        >
+                if (!name) {
 
-                            ${status
-                                .replaceAll("_", " ")
-                            }
+                    throw new Error(
+                        "अपना नाम डालें।"
+                    );
+                }
 
-                        </span>
 
-                    </div>
+                if (!phone) {
 
-                `;
+                    throw new Error(
+                        "अपना Phone Number डालें।"
+                    );
+                }
 
-            }).join("");
 
-    }
+                const business =
+                    await getBusiness();
 
-    catch (error) {
 
-        console.error(error);
+                const {
+                    data,
+                    error
+                } = await sb
+                    .from("requests")
+                    .insert({
 
-        $("historyList").innerHTML =
-            "❌ " + error.message;
-    }
+                        business_id:
+                            business.id,
+
+                        customer_id:
+                            user.id,
+
+                        type:
+                            requestType,
+
+                        item_name:
+                            item,
+
+                        customer_name:
+                            name,
+
+                        customer_phone:
+                            phone,
+
+                        note:
+                            note,
+
+                        status:
+                            "pending"
+                    })
+                    .select()
+                    .single();
+
+
+                if (error) {
+
+                    throw error;
+                }
+
+
+                if (!data) {
+
+                    throw new Error(
+                        "Order save नहीं हुआ"
+                    );
+                }
+
+
+                // SUCCESS
+
+                if (requestType === "order") {
+
+                    message(
+                        "done",
+                        "🎉 आपका Order Successfully हो गया!"
+                    );
+
+                } else {
+
+                    message(
+                        "done",
+                        "🎉 आपकी Appointment Successfully Book हो गई!"
+                    );
+                }
+
+
+                // Disable duplicate order
+
+                $("send").disabled = true;
+
+
+                await loadHistory();
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+                message(
+                    "done",
+                    "❌ " + error.message
+                );
+            }
+
+        }
+    );
 }
 
 
-// =========================================
-// LOGOUT
-// =========================================
+// =============================================
+// LOAD HISTORY
+// =============================================
 
-$("logout").addEventListener(
-    "click",
-    async function () {
+async function loadHistory() {
 
-        await sb.auth.signOut();
+    const user =
+        await getUser();
 
-        window.location.href =
-            backUrl;
+
+    if (!user || !$("historyList")) return;
+
+
+    const {
+        data,
+        error
+    } = await sb
+        .from("requests")
+        .select("*")
+        .eq(
+            "customer_id",
+            user.id
+        )
+        .order(
+            "created_at",
+            {
+                ascending: false
+            }
+        );
+
+
+    if (error) {
+
+        $("historyList").innerHTML =
+            "❌ " + error.message;
+
+        return;
     }
-);
 
 
-// =========================================
+    if (!data || data.length === 0) {
+
+        $("historyList").innerHTML =
+            "<p>No orders or bookings yet.</p>";
+
+        return;
+    }
+
+
+    $("historyList").innerHTML =
+        "";
+
+
+    data.forEach(request => {
+
+        const card =
+            document.createElement("div");
+
+        card.className =
+            "card history-card";
+
+
+        const typeText =
+            request.type === "order"
+                ? "🛒 Product Order"
+                : "📅 Service Booking";
+
+
+        const title =
+            document.createElement("h3");
+
+        title.textContent =
+            typeText + " - " +
+            (request.item_name || "");
+
+
+        const status =
+            document.createElement("p");
+
+        status.innerHTML =
+            "<b>Status:</b> " +
+            (request.status || "pending")
+                .replaceAll("_", " ");
+
+
+        card.appendChild(title);
+        card.appendChild(status);
+
+        $("historyList").appendChild(card);
+    });
+}
+
+
+// =============================================
+// LOGOUT
+// =============================================
+
+if ($("logout")) {
+
+    $("logout").addEventListener(
+        "click",
+        async function () {
+
+            await sb.auth.signOut();
+
+            window.location.href =
+                backUrl;
+
+        }
+    );
+}
+
+
+// =============================================
 // START
-// =========================================
+// =============================================
 
 loadPage();
