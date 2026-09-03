@@ -1,0 +1,35 @@
+<!doctype html>
+<html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BizNest Admin Login</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head><body>
+<nav class="nav"><a class="brand" href="index.html">⚡ BizNest</a><a href="index.html">Home</a></nav>
+<main class="wrap" style="max-width:520px">
+  <div class="card">
+    <h2>Admin Login</h2>
+    <p class="small">Login with an authorized administrator account.</p>
+    <input id="email" class="input" type="email" placeholder="Admin Email">
+    <input id="password" class="input" type="password" placeholder="Password">
+    <button id="adminLogin" class="btn orange">Admin Login</button>
+    <p id="msg"></p>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/config.js"></script>
+<script>
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+adminLogin.onclick=async()=>{
+  msg.textContent="Please wait...";
+  const r=await sb.auth.signInWithPassword({email:email.value.trim(),password:password.value});
+  if(r.error){msg.textContent=r.error.message;return;}
+  const p=await sb.from("profiles").select("role").eq("id",r.data.user.id).maybeSingle();
+  if(!p.data || p.data.role!=="admin"){
+    await sb.auth.signOut();
+    msg.textContent="This account is not authorized as admin.";
+    return;
+  }
+  location.href="admin.html";
+};
+</script>
+</body></html>
