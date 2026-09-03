@@ -1,25 +1,23 @@
-const params = new URLSearchParams(window.location.search);
-
-const slug = params.get("slug");
-
-if (!slug) {
-    document.getElementById("loading").innerHTML =
-        "<h2>❌ Business URL missing</h2>";
-    throw new Error("Business slug missing");
-}
-
 const $ = (id) => document.getElementById(id);
+
+const params = new URLSearchParams(window.location.search);
+const slug = params.get("slug");
 
 let business = null;
 
 
-// =========================================
-// LOAD BUSINESS WEBSITE
-// =========================================
+// =============================================
+// LOAD BUSINESS
+// =============================================
 
 async function loadSite() {
 
     try {
+
+        if (!slug) {
+            throw new Error("Business link missing");
+        }
+
 
         const { data, error } = await sb
             .from("businesses")
@@ -33,31 +31,41 @@ async function loadSite() {
             throw new Error("Business not found");
         }
 
+
         business = data;
 
-        document.title = business.name + " | BizNest";
 
-        $("brand").textContent = business.name;
+        // Basic details
 
-        $("name").textContent = business.name;
+        if ($("brand")) $("brand").textContent = business.name;
+        if ($("name")) $("name").textContent = business.name;
 
-        $("tag").textContent =
-            business.tagline || "";
+        if ($("tag")) {
+            $("tag").textContent =
+                business.tagline || "";
+        }
 
-        $("contact").textContent =
-            business.phone
-                ? "📞 " + business.phone
-                : "";
+        if ($("contact")) {
+            $("contact").textContent =
+                business.phone
+                    ? "📞 " + business.phone
+                    : "";
+        }
 
-        $("addr").textContent =
-            business.address
-                ? "📍 " + business.address
-                : "";
+        if ($("addr")) {
+            $("addr").textContent =
+                business.address
+                    ? "📍 " + business.address
+                    : "";
+        }
 
 
-        // LOGO
+        // Logo
 
-        if (business.logo_url) {
+        if (
+            business.logo_url &&
+            $("heroLogo")
+        ) {
 
             $("heroLogo").src =
                 business.logo_url;
@@ -68,24 +76,31 @@ async function loadSite() {
         }
 
 
-        // CUSTOMER LOGIN BUTTON
+        // Customer Login
 
-        $("customerLogin").onclick = function () {
+        if ($("customerLogin")) {
 
-            window.location.href =
-                "customer.html?slug=" +
-                encodeURIComponent(slug);
-        };
+            $("customerLogin").onclick =
+                function () {
+
+                    window.location.href =
+                        "customer.html?slug=" +
+                        encodeURIComponent(slug);
+                };
+        }
 
 
         await loadProducts();
-
         await loadServices();
 
 
-        $("loading").classList.add("hidden");
+        if ($("loading")) {
+            $("loading").classList.add("hidden");
+        }
 
-        $("app").classList.remove("hidden");
+        if ($("app")) {
+            $("app").classList.remove("hidden");
+        }
 
     }
 
@@ -93,19 +108,24 @@ async function loadSite() {
 
         console.error(error);
 
-        $("loading").innerHTML =
-            "<h2>❌ " +
-            error.message +
-            "</h2>";
+        if ($("loading")) {
+
+            $("loading").innerHTML =
+                "<h2>❌ " +
+                error.message +
+                "</h2>";
+        }
     }
 }
 
 
-// =========================================
+// =============================================
 // LOAD PRODUCTS
-// =========================================
+// =============================================
 
 async function loadProducts() {
+
+    if (!$("plist")) return;
 
     const { data, error } = await sb
         .from("products")
@@ -136,50 +156,96 @@ async function loadProducts() {
 
 
     $("plist").innerHTML =
-        data.map(product => `
+        "";
 
-            <div class="card">
 
-                ${
-                    product.image_url
-                        ? `
-                        <img
-                            src="${product.image_url}"
-                            class="product-image"
-                            alt="${product.name}"
-                        >
-                        `
-                        : ""
-                }
+    data.forEach(product => {
 
-                <h3>${product.name}</h3>
+        const card =
+            document.createElement("div");
 
-                <p>
-                    ${product.description || ""}
-                </p>
+        card.className =
+            "card";
 
-                <div class="price">
-                    ₹${product.price || 0}
-                </div>
 
-                <button
-                    class="btn orange"
-                    onclick="orderProduct('${product.name.replace(/'/g, "\\'")}')"
-                >
-                    🛒 Order Now
-                </button>
+        if (product.image_url) {
 
-            </div>
+            const image =
+                document.createElement("img");
 
-        `).join("");
+            image.src =
+                product.image_url;
+
+            image.className =
+                "product-image";
+
+            card.appendChild(image);
+        }
+
+
+        const title =
+            document.createElement("h3");
+
+        title.textContent =
+            product.name;
+
+
+        const description =
+            document.createElement("p");
+
+        description.textContent =
+            product.description || "";
+
+
+        const price =
+            document.createElement("div");
+
+        price.className =
+            "price";
+
+        price.textContent =
+            "₹" + (product.price || 0);
+
+
+        const button =
+            document.createElement("button");
+
+        button.className =
+            "btn orange";
+
+        button.textContent =
+            "🛒 Order Now";
+
+
+        button.addEventListener(
+            "click",
+            function () {
+
+                goToCustomer(
+                    "order",
+                    product.name
+                );
+            }
+        );
+
+
+        card.appendChild(title);
+        card.appendChild(description);
+        card.appendChild(price);
+        card.appendChild(button);
+
+        $("plist").appendChild(card);
+    });
 }
 
 
-// =========================================
+// =============================================
 // LOAD SERVICES
-// =========================================
+// =============================================
 
 async function loadServices() {
+
+    if (!$("slist")) return;
 
     const { data, error } = await sb
         .from("services")
@@ -210,63 +276,95 @@ async function loadServices() {
 
 
     $("slist").innerHTML =
-        data.map(service => `
+        "";
 
-            <div class="card">
 
-                <h3>${service.name}</h3>
+    data.forEach(service => {
 
-                <p>
-                    ${service.description || ""}
-                </p>
+        const card =
+            document.createElement("div");
 
-                <div class="price">
-                    ₹${service.price || 0}
-                </div>
+        card.className =
+            "card";
 
-                <button
-                    class="btn orange"
-                    onclick="bookService('${service.name.replace(/'/g, "\\'")}')"
-                >
-                    📅 Book Appointment
-                </button>
 
-            </div>
+        const title =
+            document.createElement("h3");
 
-        `).join("");
+        title.textContent =
+            service.name;
+
+
+        const description =
+            document.createElement("p");
+
+        description.textContent =
+            service.description || "";
+
+
+        const price =
+            document.createElement("div");
+
+        price.className =
+            "price";
+
+        price.textContent =
+            "₹" + (service.price || 0);
+
+
+        const button =
+            document.createElement("button");
+
+        button.className =
+            "btn orange";
+
+        button.textContent =
+            "📅 Book Appointment";
+
+
+        button.addEventListener(
+            "click",
+            function () {
+
+                goToCustomer(
+                    "booking",
+                    service.name
+                );
+            }
+        );
+
+
+        card.appendChild(title);
+        card.appendChild(description);
+        card.appendChild(price);
+        card.appendChild(button);
+
+        $("slist").appendChild(card);
+    });
 }
 
 
-// =========================================
-// ORDER PRODUCT
-// =========================================
+// =============================================
+// GO TO CUSTOMER
+// =============================================
 
-window.orderProduct = function (productName) {
+function goToCustomer(type, item) {
 
-    window.location.href =
+    const url =
         "customer.html?slug=" +
         encodeURIComponent(slug) +
-        "&type=order&item=" +
-        encodeURIComponent(productName);
-};
+        "&type=" +
+        encodeURIComponent(type) +
+        "&item=" +
+        encodeURIComponent(item);
 
 
-// =========================================
-// BOOK SERVICE
-// =========================================
-
-window.bookService = function (serviceName) {
-
-    window.location.href =
-        "customer.html?slug=" +
-        encodeURIComponent(slug) +
-        "&type=booking&item=" +
-        encodeURIComponent(serviceName);
-};
+    window.location.href = url;
+}
 
 
-// =========================================
+// =============================================
 // START
-// =========================================
+// =============================================
 
 loadSite();
