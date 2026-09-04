@@ -1,2 +1,417 @@
-<!doctype html><html><head><meta name="viewport" content="width=device-width"><title>Customer Account | BizNest</title><link rel="stylesheet" href="assets/css/style.css"></head><body><header class="customer-head"><div class="container nav"><a id="back" class="logo">← <i>BizNest</i></a><button id="logoutBtn" class="btn btn-dark hidden">Logout</button></div></header><main class="container section"><div id="authBox" class="auth-card" style="margin:auto"><h1>Customer Account</h1><p>Login or create an account to place orders and book appointments.</p><label>Name (for new account)<input id="regName" class="input"></label><label>Email<input id="email" class="input" type="email"></label><label>Password<input id="password" class="input" type="password"></label><div class="hero-actions"><button id="loginBtn" class="btn btn-dark">Login</button><button id="registerBtn" class="btn btn-primary">Register</button></div><div id="msg" class="notice"></div></div>
-<div id="customerBox" class="hidden"><div class="dash-head"><div><h1 id="welcome">Welcome</h1><span class="muted">Your orders and bookings</span></div></div><div class="form-grid"><div class="card"><h2 id="actionTitle">Customer Request</h2><div id="selectedItem" class="notice"></div><label>Your Name<input id="cName" class="input"></label><label>Phone<input id="cPhone" class="input"></label><label>Note<textarea id="note"></textarea></label><button id="submitRequest" class="btn btn-primary" style="margin-top:18px;width:100%">Submit Request</button><div id="requestMsg" class="notice"></div></div><div class="card"><h2>Account History</h2><div id="history"></div></div></div></div></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="assets/js/supabase-config.js"></script><script src="assets/js/customer.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+
+    <meta name="viewport" content="width=device-width">
+
+    <title>Customer Account | BizNest</title>
+
+    <link rel="stylesheet" href="assets/css/style.css">
+
+</head>
+
+<body>
+
+
+<!-- HEADER -->
+
+<header class="customer-head">
+
+    <div class="container nav">
+
+        <a id="back" class="logo">
+            ← <i>Back to Business</i>
+        </a>
+
+
+        <button
+            id="logoutBtn"
+            class="btn btn-dark hidden"
+        >
+            Logout
+        </button>
+
+    </div>
+
+</header>
+
+
+
+<!-- MAIN -->
+
+<main class="container section">
+
+
+    <!-- LOGIN / REGISTER -->
+
+    <div
+        id="authBox"
+        class="auth-card"
+        style="margin:auto"
+    >
+
+        <h1>Customer Account</h1>
+
+        <p>
+            Login or create an account to place orders
+            and book appointments.
+        </p>
+
+
+        <label>
+
+            Name (for new account)
+
+            <input
+                id="regName"
+                class="input"
+                placeholder="Enter your full name"
+            >
+
+        </label>
+
+
+        <label>
+
+            Email
+
+            <input
+                id="email"
+                class="input"
+                type="email"
+                placeholder="Enter your email"
+            >
+
+        </label>
+
+
+        <label>
+
+            Password
+
+            <input
+                id="password"
+                class="input"
+                type="password"
+                placeholder="Enter password"
+            >
+
+        </label>
+
+
+        <div class="hero-actions">
+
+            <button
+                id="loginBtn"
+                class="btn btn-dark"
+            >
+                Login
+            </button>
+
+
+            <button
+                id="registerBtn"
+                class="btn btn-primary"
+            >
+                Register
+            </button>
+
+        </div>
+
+
+        <div
+            id="msg"
+            class="notice"
+        ></div>
+
+    </div>
+
+
+
+    <!-- CUSTOMER DASHBOARD -->
+
+    <div
+        id="customerBox"
+        class="hidden"
+    >
+
+
+        <div class="dash-head">
+
+            <div>
+
+                <h1 id="welcome">
+                    Welcome
+                </h1>
+
+                <span class="muted">
+                    Your orders and bookings
+                </span>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="form-grid">
+
+
+            <!-- ORDER FORM -->
+
+            <div class="card">
+
+
+                <h2 id="actionTitle">
+                    Customer Request
+                </h2>
+
+
+                <div
+                    id="selectedItem"
+                    class="notice"
+                ></div>
+
+
+
+                <!-- PRODUCT DETAILS -->
+
+                <div
+                    id="orderDetailsBox"
+                    style="margin-top:15px"
+                >
+
+                    <h3>
+                        📦 Product Details
+                    </h3>
+
+
+                    <div id="productDetails">
+
+                        Loading product details...
+
+                    </div>
+
+
+                    <!-- QUANTITY -->
+
+                    <label
+                        id="quantityBox"
+                        style="margin-top:15px"
+                    >
+
+                        Quantity
+
+                        <input
+                            id="quantity"
+                            class="input"
+                            type="number"
+                            min="1"
+                            value="1"
+                        >
+
+                    </label>
+
+
+                    <!-- TOTAL -->
+
+                    <div
+                        class="notice"
+                        style="margin-top:15px"
+                    >
+
+                        💰 Total Amount:
+
+                        <b id="totalAmount">
+                            ₹0
+                        </b>
+
+                    </div>
+
+
+                </div>
+
+
+
+                <!-- CUSTOMER DETAILS -->
+
+                <h3 style="margin-top:25px">
+                    👤 Customer Details
+                </h3>
+
+
+                <label>
+
+                    Your Name
+
+                    <input
+                        id="cName"
+                        class="input"
+                        placeholder="Full name"
+                    >
+
+                </label>
+
+
+                <label>
+
+                    Phone Number
+
+                    <input
+                        id="cPhone"
+                        class="input"
+                        type="tel"
+                        placeholder="Mobile number"
+                    >
+
+                </label>
+
+
+
+                <!-- DELIVERY ADDRESS -->
+
+                <div
+                    id="addressBox"
+                    style="margin-top:20px"
+                >
+
+
+                    <h3>
+                        🏠 Delivery Address
+                    </h3>
+
+
+                    <label>
+
+                        House No / Street / Area
+
+                        <textarea
+                            id="cAddress"
+                            placeholder="House number, street, village, area"
+                        ></textarea>
+
+                    </label>
+
+
+
+                    <label>
+
+                        City / District
+
+                        <input
+                            id="cCity"
+                            class="input"
+                            placeholder="City or district"
+                        >
+
+                    </label>
+
+
+
+                    <label>
+
+                        State
+
+                        <input
+                            id="cState"
+                            class="input"
+                            placeholder="State"
+                        >
+
+                    </label>
+
+
+
+                    <label>
+
+                        Pincode
+
+                        <input
+                            id="cPincode"
+                            class="input"
+                            type="text"
+                            placeholder="Pincode"
+                        >
+
+                    </label>
+
+
+                </div>
+
+
+
+                <!-- NOTE -->
+
+                <label style="margin-top:20px">
+
+                    Additional Note
+
+                    <textarea
+                        id="note"
+                        placeholder="Any special instructions..."
+                    ></textarea>
+
+                </label>
+
+
+
+                <!-- SUBMIT -->
+
+                <button
+                    id="submitRequest"
+                    class="btn btn-primary"
+                    style="margin-top:18px;width:100%"
+                >
+
+                    🛒 Submit Order
+
+                </button>
+
+
+                <div
+                    id="requestMsg"
+                    class="notice"
+                ></div>
+
+
+            </div>
+
+
+
+            <!-- HISTORY -->
+
+            <div class="card">
+
+                <h2>
+                    📦 Account History
+                </h2>
+
+
+                <div id="history"></div>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+</main>
+
+
+
+<!-- SCRIPTS -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="assets/js/supabase-config.js"></script>
+
+<script src="assets/js/customer.js"></script>
+
+
+</body>
+</html>
