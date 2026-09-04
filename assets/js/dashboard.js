@@ -1,59 +1,48 @@
-const $ = id => document.getElementById(id);
+const $ = x => document.getElementById(x);
 
 let USER = null;
 let BUSINESS = null;
 
-
-const esc = value => {
-    const div = document.createElement("div");
-    div.textContent = value ?? "";
-    return div.innerHTML;
+const esc = v => {
+    const d = document.createElement("div");
+    d.textContent = v ?? "";
+    return d.innerHTML;
 };
 
 
-// ========================================
-// MENU
-// ========================================
+// ==========================================
+// DASHBOARD MENU
+// ==========================================
 
-document.querySelectorAll(".menu button[data-panel]")
-    .forEach(button => {
+document.querySelectorAll(".menu button[data-panel]").forEach(b => {
 
-        button.onclick = () => {
+    b.onclick = () => {
 
-            document
-                .querySelectorAll(".menu button[data-panel]")
-                .forEach(item => {
-                    item.classList.remove("active");
-                });
+        document
+            .querySelectorAll(".menu button[data-panel]")
+            .forEach(x => x.classList.remove("active"));
 
-
-            button.classList.add("active");
+        b.classList.add("active");
 
 
-            document
-                .querySelectorAll(".dash-panel")
-                .forEach(panel => {
-                    panel.classList.remove("active");
-                });
+        document
+            .querySelectorAll(".dash-panel")
+            .forEach(x => x.classList.remove("active"));
+
+        $(b.dataset.panel).classList.add("active");
 
 
-            $(button.dataset.panel)
-                .classList.add("active");
+        $("pageTitle").textContent =
+            b.textContent.replace(/^[^ ]+ /, "");
+
+    };
+
+});
 
 
-            $("pageTitle").textContent =
-                button.textContent
-                    .replace(/^[^ ]+ /, "")
-                    .trim();
-
-        };
-
-    });
-
-
-// ========================================
+// ==========================================
 // INIT
-// ========================================
+// ==========================================
 
 async function init() {
 
@@ -64,7 +53,7 @@ async function init() {
 
     if (!user) {
 
-        location.href = "login.html";
+        location = "login.html";
         return;
 
     }
@@ -73,14 +62,11 @@ async function init() {
     USER = user;
 
 
-    $("ownerInfo").innerHTML = `
-        <b>${esc(
-            user.user_metadata?.name ||
-            "Business Owner"
-        )}</b>
-        <br>
-        ${esc(user.email)}
-    `;
+    $("ownerInfo").innerHTML =
+        "<b>" +
+        esc(user.user_metadata?.name || "Business Owner") +
+        "</b><br>" +
+        esc(user.email);
 
 
     await loadBusiness();
@@ -90,17 +76,18 @@ async function init() {
 }
 
 
-// ========================================
+// ==========================================
 // LOAD BUSINESS
-// ========================================
+// ==========================================
 
 async function loadBusiness() {
 
-    const { data, error } = await sb
-        .from("businesses")
-        .select("*")
-        .eq("owner_id", USER.id)
-        .maybeSingle();
+    const { data, error } =
+        await sb
+            .from("businesses")
+            .select("*")
+            .eq("owner_id", USER.id)
+            .maybeSingle();
 
 
     if (error) {
@@ -113,106 +100,47 @@ async function loadBusiness() {
     BUSINESS = data || null;
 
 
-    if (!BUSINESS) {
+    if (BUSINESS) {
 
-        $("publicBox").classList.add("hidden");
+        $("bName").value =
+            BUSINESS.name || "";
 
-        return;
+        $("bSlug").value =
+            BUSINESS.slug || "";
+
+        $("bPhone").value =
+            BUSINESS.phone || "";
+
+        $("bLogo").value =
+            BUSINESS.logo_url || "";
+
+        $("bTagline").value =
+            BUSINESS.tagline || "";
+
+        $("bAddress").value =
+            BUSINESS.address || "";
+
+
+        $("publicBox")
+            .classList.remove("hidden");
+
+
+        const publicUrl =
+            "site.html?slug=" +
+            encodeURIComponent(BUSINESS.slug);
+
+
+        $("publicLink").href =
+            publicUrl;
 
     }
-
-
-    $("bName").value =
-        BUSINESS.name || "";
-
-    $("bSlug").value =
-        BUSINESS.slug || "";
-
-    $("bPhone").value =
-        BUSINESS.phone || "";
-
-    $("bLogo").value =
-        BUSINESS.logo_url || "";
-
-    $("bTagline").value =
-        BUSINESS.tagline || "";
-
-    $("bAddress").value =
-        BUSINESS.address || "";
-
-
-    // PUBLIC URL
-
-    const publicURL =
-        window.location.origin +
-        "/site.html?slug=" +
-        encodeURIComponent(BUSINESS.slug);
-
-
-    $("publicBox")
-        .classList.remove("hidden");
-
-
-    $("publicUrl").value =
-        publicURL;
-
-
-    $("publicLink").href =
-        publicURL;
 
 }
 
 
-// ========================================
-// COPY PUBLIC URL
-// ========================================
-
-$("copyPublicUrl").onclick = async () => {
-
-    if (!BUSINESS) {
-
-        $("copyMsg").textContent =
-            "⚠️ Please save your business profile first.";
-
-        return;
-
-    }
-
-
-    const url = $("publicUrl").value;
-
-
-    try {
-
-        await navigator.clipboard.writeText(url);
-
-        $("copyMsg").textContent =
-            "✅ Public URL copied successfully!";
-
-    } catch (error) {
-
-        $("publicUrl").select();
-
-        document.execCommand("copy");
-
-        $("copyMsg").textContent =
-            "✅ Public URL copied successfully!";
-
-    }
-
-
-    setTimeout(() => {
-
-        $("copyMsg").textContent = "";
-
-    }, 3000);
-
-};
-
-
-// ========================================
-// LOAD ALL
-// ========================================
+// ==========================================
+// LOAD EVERYTHING
+// ==========================================
 
 async function loadAll() {
 
@@ -229,9 +157,9 @@ async function loadAll() {
 }
 
 
-// ========================================
+// ==========================================
 // SAVE BUSINESS
-// ========================================
+// ==========================================
 
 $("saveBusiness").onclick = async () => {
 
@@ -244,17 +172,13 @@ $("saveBusiness").onclick = async () => {
             .value
             .trim()
             .toLowerCase()
-            .replace(/[^a-z0-9-]/g, "-")
-            .replace(/-+/g, "-")
-            .replace(/^-|-$/g, "");
+            .replace(/[^a-z0-9-]/g, "-");
 
 
     if (!name || !slug) {
 
-        $("businessMsg").textContent =
-            "⚠️ Business name and Public URL name are required.";
-
-        return;
+        return $("businessMsg").textContent =
+            "⚠️ Business name and public URL name are required";
 
     }
 
@@ -263,9 +187,9 @@ $("saveBusiness").onclick = async () => {
 
         owner_id: USER.id,
 
-        name: name,
+        name,
 
-        slug: slug,
+        slug,
 
         phone:
             $("bPhone").value.trim(),
@@ -282,37 +206,39 @@ $("saveBusiness").onclick = async () => {
     };
 
 
-    let result;
+    let q;
 
 
     if (BUSINESS) {
 
-        result = await sb
+        q = sb
             .from("businesses")
             .update(row)
             .eq("id", BUSINESS.id);
 
     } else {
 
-        result = await sb
+        q = sb
             .from("businesses")
             .insert(row);
 
     }
 
 
-    if (result.error) {
+    const { error } =
+        await q;
 
-        $("businessMsg").textContent =
-            "❌ " + result.error.message;
 
-        return;
+    if (error) {
+
+        return $("businessMsg").textContent =
+            "❌ " + error.message;
 
     }
 
 
     $("businessMsg").textContent =
-        "✅ Business profile saved successfully!";
+        "✅ Business profile saved successfully";
 
 
     await loadBusiness();
@@ -322,18 +248,16 @@ $("saveBusiness").onclick = async () => {
 };
 
 
-// ========================================
+// ==========================================
 // ADD PRODUCT
-// ========================================
+// ==========================================
 
 $("addProduct").onclick = async () => {
 
     if (!BUSINESS) {
 
-        $("productMsg").textContent =
-            "⚠️ Save your business profile first.";
-
-        return;
+        return $("productMsg").textContent =
+            "⚠️ Save your business profile first";
 
     }
 
@@ -344,68 +268,66 @@ $("addProduct").onclick = async () => {
 
     if (!name) {
 
-        $("productMsg").textContent =
-            "⚠️ Enter product name.";
-
-        return;
+        return $("productMsg").textContent =
+            "⚠️ Enter product name";
 
     }
 
 
-    const { error } = await sb
-        .from("products")
-        .insert({
+    const { error } =
+        await sb
+            .from("products")
+            .insert({
 
-            business_id: BUSINESS.id,
+                business_id:
+                    BUSINESS.id,
 
-            name: name,
+                name,
 
-            price:
-                Number($("pPrice").value) || 0,
+                price:
+                    Number($("pPrice").value) || 0,
 
-            description:
-                $("pDesc").value.trim(),
+                description:
+                    $("pDesc").value.trim(),
 
-            image_url:
-                $("pImage").value.trim(),
+                image_url:
+                    $("pImage").value.trim(),
 
-            active: true
+                active: true
+
+            });
+
+
+    $("productMsg").textContent =
+        error
+            ? "❌ " + error.message
+            : "✅ Product added";
+
+
+    if (!error) {
+
+        [
+            "pName",
+            "pPrice",
+            "pDesc",
+            "pImage"
+        ].forEach(id => {
+
+            $(id).value = "";
 
         });
 
 
-    if (error) {
-
-        $("productMsg").textContent =
-            "❌ " + error.message;
-
-        return;
+        loadProducts();
 
     }
-
-
-    $("productMsg").textContent =
-        "✅ Product added successfully!";
-
-
-    [
-        "pName",
-        "pPrice",
-        "pDesc",
-        "pImage"
-    ].forEach(id => {
-        $(id).value = "";
-    });
-
-
-    await loadProducts();
 
 };
 
 
-// ========================================
+// ==========================================
 // LOAD PRODUCTS
-// ========================================
+// ==========================================
 
 async function loadProducts() {
 
@@ -421,21 +343,19 @@ async function loadProducts() {
     }
 
 
-    const { data, error } = await sb
-        .from("products")
-        .select("*")
-        .eq("business_id", BUSINESS.id)
-        .order("created_at", {
-            ascending: false
-        });
+    const { data, error } =
+        await sb
+            .from("products")
+            .select("*")
+            .eq("business_id", BUSINESS.id)
+            .order("created_at", {
+                ascending: false
+            });
 
 
     if (error) {
 
-        $("productList").innerHTML =
-            `<div class="empty">
-                ${esc(error.message)}
-            </div>`;
+        console.error(error);
 
         return;
 
@@ -448,43 +368,46 @@ async function loadProducts() {
 
     $("productList").innerHTML =
         (data || [])
-            .map(product => `
+            .map(p => `
 
                 <div class="item-card">
 
                     ${
-                        product.image_url
+                        p.image_url
                             ? `
                                 <img
                                     class="product-img"
-                                    src="${esc(product.image_url)}"
-                                    alt="${esc(product.name)}"
+                                    src="${esc(p.image_url)}"
+                                    alt="${esc(p.name)}"
                                 >
                               `
                             : `
-                                <div class="product-img"></div>
+                                <div class="product-img">
+                                    📦
+                                </div>
                               `
                     }
 
                     <h3>
-                        ${esc(product.name)}
+                        ${esc(p.name)}
                     </h3>
 
                     <p class="muted">
-                        ${esc(product.description || "")}
+                        ${esc(p.description || "")}
                     </p>
 
                     <b>
-                        ₹${esc(product.price)}
+                        ₹${esc(p.price)}
                     </b>
+
 
                     <div class="item-actions">
 
                         <button
                             class="btn btn-red btn-sm"
-                            onclick="delProduct('${product.id}')"
+                            onclick="delProduct('${p.id}')"
                         >
-                            🗑 Delete
+                            Delete
                         </button>
 
                     </div>
@@ -494,7 +417,6 @@ async function loadProducts() {
             `)
             .join("")
 
-
         ||
 
         '<div class="empty">No products yet</div>';
@@ -502,48 +424,44 @@ async function loadProducts() {
 }
 
 
-// ========================================
+// ==========================================
 // DELETE PRODUCT
-// ========================================
+// ==========================================
 
 window.delProduct = async id => {
 
-    if (!confirm("Delete this product?")) {
-        return;
-    }
+    if (!confirm("Delete this product?")) return;
 
 
-    const { error } = await sb
-        .from("products")
-        .delete()
-        .eq("id", id);
+    const { error } =
+        await sb
+            .from("products")
+            .delete()
+            .eq("id", id);
 
 
     if (error) {
 
         alert(error.message);
-        return;
 
     }
 
 
-    await loadProducts();
+    loadProducts();
 
 };
 
 
-// ========================================
+// ==========================================
 // ADD SERVICE
-// ========================================
+// ==========================================
 
 $("addService").onclick = async () => {
 
     if (!BUSINESS) {
 
-        $("serviceMsg").textContent =
-            "⚠️ Save your business profile first.";
-
-        return;
+        return $("serviceMsg").textContent =
+            "⚠️ Save your business profile first";
 
     }
 
@@ -554,64 +472,62 @@ $("addService").onclick = async () => {
 
     if (!name) {
 
-        $("serviceMsg").textContent =
-            "⚠️ Enter service name.";
-
-        return;
+        return $("serviceMsg").textContent =
+            "⚠️ Enter service name";
 
     }
 
 
-    const { error } = await sb
-        .from("services")
-        .insert({
+    const { error } =
+        await sb
+            .from("services")
+            .insert({
 
-            business_id: BUSINESS.id,
+                business_id:
+                    BUSINESS.id,
 
-            name: name,
+                name,
 
-            price:
-                Number($("sPrice").value) || 0,
+                price:
+                    Number($("sPrice").value) || 0,
 
-            description:
-                $("sDesc").value.trim(),
+                description:
+                    $("sDesc").value.trim(),
 
-            active: true
+                active: true
+
+            });
+
+
+    $("serviceMsg").textContent =
+        error
+            ? "❌ " + error.message
+            : "✅ Service added";
+
+
+    if (!error) {
+
+        [
+            "sName",
+            "sPrice",
+            "sDesc"
+        ].forEach(id => {
+
+            $(id).value = "";
 
         });
 
 
-    if (error) {
-
-        $("serviceMsg").textContent =
-            "❌ " + error.message;
-
-        return;
+        loadServices();
 
     }
-
-
-    $("serviceMsg").textContent =
-        "✅ Service added successfully!";
-
-
-    [
-        "sName",
-        "sPrice",
-        "sDesc"
-    ].forEach(id => {
-        $(id).value = "";
-    });
-
-
-    await loadServices();
 
 };
 
 
-// ========================================
+// ==========================================
 // LOAD SERVICES
-// ========================================
+// ==========================================
 
 async function loadServices() {
 
@@ -627,21 +543,19 @@ async function loadServices() {
     }
 
 
-    const { data, error } = await sb
-        .from("services")
-        .select("*")
-        .eq("business_id", BUSINESS.id)
-        .order("created_at", {
-            ascending: false
-        });
+    const { data, error } =
+        await sb
+            .from("services")
+            .select("*")
+            .eq("business_id", BUSINESS.id)
+            .order("created_at", {
+                ascending: false
+            });
 
 
     if (error) {
 
-        $("serviceList").innerHTML =
-            `<div class="empty">
-                ${esc(error.message)}
-            </div>`;
+        console.error(error);
 
         return;
 
@@ -654,7 +568,7 @@ async function loadServices() {
 
     $("serviceList").innerHTML =
         (data || [])
-            .map(service => `
+            .map(s => `
 
                 <div class="item-card">
 
@@ -663,24 +577,25 @@ async function loadServices() {
                     </div>
 
                     <h3>
-                        ${esc(service.name)}
+                        ${esc(s.name)}
                     </h3>
 
                     <p class="muted">
-                        ${esc(service.description || "")}
+                        ${esc(s.description || "")}
                     </p>
 
                     <b>
-                        ₹${esc(service.price)}
+                        ₹${esc(s.price)}
                     </b>
+
 
                     <div class="item-actions">
 
                         <button
                             class="btn btn-red btn-sm"
-                            onclick="delService('${service.id}')"
+                            onclick="delService('${s.id}')"
                         >
-                            🗑 Delete
+                            Delete
                         </button>
 
                     </div>
@@ -690,7 +605,6 @@ async function loadServices() {
             `)
             .join("")
 
-
         ||
 
         '<div class="empty">No services yet</div>';
@@ -698,39 +612,37 @@ async function loadServices() {
 }
 
 
-// ========================================
+// ==========================================
 // DELETE SERVICE
-// ========================================
+// ==========================================
 
 window.delService = async id => {
 
-    if (!confirm("Delete this service?")) {
-        return;
-    }
+    if (!confirm("Delete this service?")) return;
 
 
-    const { error } = await sb
-        .from("services")
-        .delete()
-        .eq("id", id);
+    const { error } =
+        await sb
+            .from("services")
+            .delete()
+            .eq("id", id);
 
 
     if (error) {
 
         alert(error.message);
-        return;
 
     }
 
 
-    await loadServices();
+    loadServices();
 
 };
 
 
-// ========================================
-// LOAD ORDERS & BOOKINGS
-// ========================================
+// ==========================================
+// LOAD CUSTOMER ORDERS & BOOKINGS
+// ==========================================
 
 async function loadRequests() {
 
@@ -746,13 +658,18 @@ async function loadRequests() {
     }
 
 
-    const { data, error } = await sb
-        .from("requests")
-        .select("*")
-        .eq("business_id", BUSINESS.id)
-        .order("created_at", {
-            ascending: false
-        });
+    const { data, error } =
+        await sb
+            .from("requests")
+            .select("*")
+            .eq("business_id", BUSINESS.id)
+            .order("created_at", {
+                ascending: false
+            });
+
+
+    $("statRequests").textContent =
+        (data || []).length;
 
 
     if (error) {
@@ -767,151 +684,322 @@ async function loadRequests() {
     }
 
 
-    $("statRequests").textContent =
-        (data || []).length;
+    if (!data || data.length === 0) {
+
+        $("requestList").innerHTML =
+            '<div class="empty">No orders or bookings yet</div>';
+
+        return;
+
+    }
 
 
     $("requestList").innerHTML =
-        (data || [])
-            .map(request => `
-
-                <div class="request-card">
-
-                    <span class="status">
-                        ${esc(request.status || "new")}
-                    </span>
+        data
+            .map(r => {
 
 
-                    <h3>
+                // ==================================
+                // PRODUCT ORDER
+                // ==================================
+
+                if (r.type === "order") {
+
+                    return `
+
+                        <div class="request-card">
+
+                            <span class="status">
+                                ${esc(r.status)}
+                            </span>
+
+
+                            <h3>
+                                🛒 Product Order
+                            </h3>
+
+
+                            ${
+                                r.product_image
+                                    ? `
+                                        <img
+                                            src="${esc(r.product_image)}"
+                                            alt="${esc(r.item_name)}"
+                                            style="
+                                                width:100%;
+                                                max-height:220px;
+                                                object-fit:cover;
+                                                border-radius:10px;
+                                                margin:10px 0;
+                                            "
+                                        >
+                                      `
+                                    : ""
+                            }
+
+
+                            <h3>
+                                📦 ${esc(r.item_name)}
+                            </h3>
+
+
+                            ${
+                                r.product_description
+                                    ? `
+                                        <p class="muted">
+                                            ${esc(r.product_description)}
+                                        </p>
+                                      `
+                                    : ""
+                            }
+
+
+                            <hr>
+
+
+                            <p>
+
+                                💰 <b>Product Price:</b>
+                                ₹${esc(r.product_price || 0)}
+
+                                <br><br>
+
+                                🔢 <b>Quantity:</b>
+                                ${esc(r.quantity || 1)}
+
+                                <br><br>
+
+                                💵 <b>Total Amount:</b>
+                                ₹${esc(r.total_amount || 0)}
+
+                            </p>
+
+
+                            <hr>
+
+
+                            <h3>
+                                👤 Customer Details
+                            </h3>
+
+
+                            <p>
+
+                                👤 <b>Name:</b>
+                                ${esc(r.customer_name)}
+
+                                <br>
+
+                                📞 <b>Phone:</b>
+                                ${esc(r.customer_phone || "")}
+
+                            </p>
+
+
+                            <h3>
+                                🏠 Delivery Address
+                            </h3>
+
+
+                            <p>
+
+                                ${esc(r.delivery_address || "Address not provided")}
+
+                                <br>
+
+                                🏙️
+                                ${esc(r.city || "")}
+
+                                <br>
+
+                                📍
+                                ${esc(r.state || "")}
+
+                                <br>
+
+                                📮 Pincode:
+                                ${esc(r.pincode || "")}
+
+                            </p>
+
+
+                            ${
+                                r.note
+                                    ? `
+                                        <div class="notice">
+
+                                            📝 <b>Customer Note:</b>
+
+                                            <br>
+
+                                            ${esc(r.note)}
+
+                                        </div>
+                                      `
+                                    : ""
+                            }
+
+
+                            <div class="item-actions">
+
+                                <button
+                                    class="btn btn-green btn-sm"
+                                    onclick="setStatus('${r.id}','accepted')"
+                                >
+                                    Accept
+                                </button>
+
+
+                                <button
+                                    class="btn btn-red btn-sm"
+                                    onclick="setStatus('${r.id}','rejected')"
+                                >
+                                    Reject
+                                </button>
+
+
+                                <button
+                                    class="btn btn-blue btn-sm"
+                                    onclick="setStatus('${r.id}','processing')"
+                                >
+                                    Processing
+                                </button>
+
+
+                                <button
+                                    class="btn btn-light btn-sm"
+                                    onclick="setStatus('${r.id}','out_for_delivery')"
+                                >
+                                    Out for Delivery
+                                </button>
+
+
+                                <button
+                                    class="btn btn-dark btn-sm"
+                                    onclick="setStatus('${r.id}','delivered')"
+                                >
+                                    Delivered
+                                </button>
+
+                            </div>
+
+
+                        </div>
+
+                    `;
+
+                }
+
+
+                // ==================================
+                // SERVICE BOOKING
+                // ==================================
+
+                return `
+
+                    <div class="request-card">
+
+                        <span class="status">
+                            ${esc(r.status)}
+                        </span>
+
+
+                        <h3>
+                            📅 Service Booking
+                        </h3>
+
+
+                        <h3>
+                            ${esc(r.item_name)}
+                        </h3>
+
+
+                        <p>
+
+                            👤
+                            ${esc(r.customer_name)}
+
+                            <br>
+
+                            📞
+                            ${esc(r.customer_phone || "")}
+
+                        </p>
+
 
                         ${
-                            request.type === "booking"
-                                ? "📅 Service Booking"
-                                : "🛒 Product Order"
+                            r.note
+                                ? `
+                                    <p class="muted">
+
+                                        📝
+                                        ${esc(r.note)}
+
+                                    </p>
+                                  `
+                                : ""
                         }
 
-                    </h3>
+
+                        <div class="item-actions">
+
+                            <button
+                                class="btn btn-green btn-sm"
+                                onclick="setStatus('${r.id}','accepted')"
+                            >
+                                Accept
+                            </button>
 
 
-                    <b>
-                        ${esc(request.item_name)}
-                    </b>
+                            <button
+                                class="btn btn-red btn-sm"
+                                onclick="setStatus('${r.id}','rejected')"
+                            >
+                                Reject
+                            </button>
 
 
-                    <p>
-
-                        👤 ${esc(request.customer_name)}
-
-                        <br>
-
-                        📞 ${esc(
-                            request.customer_phone || "-"
-                        )}
-
-                    </p>
+                            <button
+                                class="btn btn-blue btn-sm"
+                                onclick="setStatus('${r.id}','processing')"
+                            >
+                                Processing
+                            </button>
 
 
-                    <p class="muted">
+                            <button
+                                class="btn btn-green btn-sm"
+                                onclick="setStatus('${r.id}','completed')"
+                            >
+                                Completed
+                            </button>
 
-                        ${esc(request.note || "")}
+                        </div>
 
-                    </p>
-
-
-                    <div class="item-actions">
-
-                        <button
-                            class="btn btn-green btn-sm"
-                            onclick="setStatus(
-                                '${request.id}',
-                                'accepted'
-                            )"
-                        >
-                            ✓ Accept
-                        </button>
-
-
-                        <button
-                            class="btn btn-red btn-sm"
-                            onclick="setStatus(
-                                '${request.id}',
-                                'rejected'
-                            )"
-                        >
-                            ✕ Reject
-                        </button>
-
-
-                        <button
-                            class="btn btn-blue btn-sm"
-                            onclick="setStatus(
-                                '${request.id}',
-                                'processing'
-                            )"
-                        >
-                            📦 Processing
-                        </button>
-
-
-                        <button
-                            class="btn btn-light btn-sm"
-                            onclick="setStatus(
-                                '${request.id}',
-                                'out_for_delivery'
-                            )"
-                        >
-                            🚚 Out for Delivery
-                        </button>
-
-
-                        <button
-                            class="btn btn-dark btn-sm"
-                            onclick="setStatus(
-                                '${request.id}',
-                                'delivered'
-                            )"
-                        >
-                            📦 Delivered
-                        </button>
-
-
-                        <button
-                            class="btn btn-green btn-sm"
-                            onclick="setStatus(
-                                '${request.id}',
-                                'completed'
-                            )"
-                        >
-                            ✓ Completed
-                        </button>
 
                     </div>
 
-                </div>
+                `;
 
-            `)
-            .join("")
-
-
-        ||
-
-        '<div class="empty">No orders or bookings yet</div>';
+            })
+            .join("");
 
 }
 
 
-// ========================================
-// UPDATE REQUEST STATUS
-// ========================================
+// ==========================================
+// UPDATE ORDER STATUS
+// ==========================================
 
 window.setStatus = async (id, status) => {
 
-    const { error } = await sb
-        .from("requests")
-        .update({
-            status: status
-        })
-        .eq("id", id);
+    const { error } =
+        await sb
+            .from("requests")
+            .update({
+                status
+            })
+            .eq("id", id);
 
 
     if (error) {
@@ -930,21 +1018,21 @@ window.setStatus = async (id, status) => {
 };
 
 
-// ========================================
+// ==========================================
 // LOGOUT
-// ========================================
+// ==========================================
 
 $("logoutBtn").onclick = async () => {
 
     await sb.auth.signOut();
 
-    location.href = "index.html";
+    location = "index.html";
 
 };
 
 
-// ========================================
+// ==========================================
 // START APP
-// ========================================
+// ==========================================
 
 init();
