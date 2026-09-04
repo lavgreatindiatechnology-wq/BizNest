@@ -3,6 +3,11 @@ const $ = x => document.getElementById(x);
 let USER = null;
 let BUSINESS = null;
 
+
+// ==========================================
+// SAFE TEXT
+// ==========================================
+
 const esc = v => {
     const d = document.createElement("div");
     d.textContent = v ?? "";
@@ -14,30 +19,135 @@ const esc = v => {
 // DASHBOARD MENU
 // ==========================================
 
-document.querySelectorAll(".menu button[data-panel]").forEach(b => {
+document.querySelectorAll(".menu button[data-panel]").forEach(button => {
 
-    b.onclick = () => {
+    button.onclick = () => {
 
         document
             .querySelectorAll(".menu button[data-panel]")
             .forEach(x => x.classList.remove("active"));
 
-        b.classList.add("active");
+        button.classList.add("active");
 
 
         document
             .querySelectorAll(".dash-panel")
             .forEach(x => x.classList.remove("active"));
 
-        $(b.dataset.panel).classList.add("active");
+        $(button.dataset.panel).classList.add("active");
 
 
         $("pageTitle").textContent =
-            b.textContent.replace(/^[^ ]+ /, "");
+            button.textContent.replace(/^[^ ]+ /, "");
 
     };
 
 });
+
+
+// ==========================================
+// CREATE PUBLIC URL
+// ==========================================
+
+function getPublicUrl(slug) {
+
+    const basePath = window.location.pathname.replace(
+        /dashboard\.html$/,
+        ""
+    );
+
+    return (
+        window.location.origin +
+        basePath +
+        "site.html?slug=" +
+        encodeURIComponent(slug)
+    );
+
+}
+
+
+// ==========================================
+// SHOW PUBLIC URL
+// ==========================================
+
+function showPublicUrl() {
+
+    if (!BUSINESS || !BUSINESS.slug) return;
+
+    const publicUrl = getPublicUrl(BUSINESS.slug);
+
+
+    $("publicBox").classList.remove("hidden");
+
+
+    // URL BOX
+
+    const urlText = $("publicUrlText");
+
+    if (urlText) {
+
+        urlText.textContent = publicUrl;
+
+    }
+
+
+    // OPEN BUTTON
+
+    const publicLink = $("publicLink");
+
+    if (publicLink) {
+
+        publicLink.href = publicUrl;
+
+        publicLink.target = "_blank";
+
+    }
+
+
+    // COPY BUTTON
+
+    const copyButton = $("copyPublicUrl");
+
+    if (copyButton) {
+
+        copyButton.onclick = async () => {
+
+            try {
+
+                await navigator.clipboard.writeText(publicUrl);
+
+                $("copyMsg").textContent =
+                    "✅ Public Website URL copied successfully!";
+
+            }
+
+            catch (error) {
+
+                // Backup copy method
+
+                const temp = document.createElement("textarea");
+
+                temp.value = publicUrl;
+
+                document.body.appendChild(temp);
+
+                temp.select();
+
+                document.execCommand("copy");
+
+                document.body.removeChild(temp);
+
+
+                $("copyMsg").textContent =
+                    "✅ Public Website URL copied successfully!";
+
+            }
+
+        };
+
+    }
+
+}
 
 
 // ==========================================
@@ -54,6 +164,7 @@ async function init() {
     if (!user) {
 
         location = "login.html";
+
         return;
 
     }
@@ -64,7 +175,10 @@ async function init() {
 
     $("ownerInfo").innerHTML =
         "<b>" +
-        esc(user.user_metadata?.name || "Business Owner") +
+        esc(
+            user.user_metadata?.name ||
+            "Business Owner"
+        ) +
         "</b><br>" +
         esc(user.email);
 
@@ -82,17 +196,18 @@ async function init() {
 
 async function loadBusiness() {
 
-    const { data, error } =
-        await sb
-            .from("businesses")
-            .select("*")
-            .eq("owner_id", USER.id)
-            .maybeSingle();
+    const { data, error } = await sb
+        .from("businesses")
+        .select("*")
+        .eq("owner_id", USER.id)
+        .maybeSingle();
 
 
     if (error) {
 
-        console.error(error);
+        console.error("Business loading error:", error);
+
+        return;
 
     }
 
@@ -100,46 +215,45 @@ async function loadBusiness() {
     BUSINESS = data || null;
 
 
-    if (BUSINESS) {
+    if (!BUSINESS) {
 
-        $("bName").value =
-            BUSINESS.name || "";
+        $("publicBox").classList.add("hidden");
 
-        $("bSlug").value =
-            BUSINESS.slug || "";
-
-        $("bPhone").value =
-            BUSINESS.phone || "";
-
-        $("bLogo").value =
-            BUSINESS.logo_url || "";
-
-        $("bTagline").value =
-            BUSINESS.tagline || "";
-
-        $("bAddress").value =
-            BUSINESS.address || "";
-
-
-        $("publicBox")
-            .classList.remove("hidden");
-
-
-        const publicUrl =
-            "site.html?slug=" +
-            encodeURIComponent(BUSINESS.slug);
-
-
-        $("publicLink").href =
-            publicUrl;
+        return;
 
     }
+
+
+    // Fill business form
+
+    $("bName").value =
+        BUSINESS.name || "";
+
+    $("bSlug").value =
+        BUSINESS.slug || "";
+
+    $("bPhone").value =
+        BUSINESS.phone || "";
+
+    $("bLogo").value =
+        BUSINESS.logo_url || "";
+
+    $("bTagline").value =
+        BUSINESS.tagline || "";
+
+    $("bAddress").value =
+        BUSINESS.address || "";
+
+
+    // SHOW PUBLIC URL
+
+    showPublicUrl();
 
 }
 
 
 // ==========================================
-// LOAD EVERYTHING
+// LOAD ALL DATA
 // ==========================================
 
 async function loadAll() {
@@ -172,13 +286,17 @@ $("saveBusiness").onclick = async () => {
             .value
             .trim()
             .toLowerCase()
-            .replace(/[^a-z0-9-]/g, "-");
+            .replace(/[^a-z0-9-]/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "");
 
 
     if (!name || !slug) {
 
-        return $("businessMsg").textContent =
-            "⚠️ Business name and public URL name are required";
+        $("businessMsg").textContent =
+            "⚠️ Business name and Public URL name are required.";
+
+        return;
 
     }
 
@@ -187,9 +305,9 @@ $("saveBusiness").onclick = async () => {
 
         owner_id: USER.id,
 
-        name,
+        name: name,
 
-        slug,
+        slug: slug,
 
         phone:
             $("bPhone").value.trim(),
@@ -206,39 +324,39 @@ $("saveBusiness").onclick = async () => {
     };
 
 
-    let q;
+    let result;
 
 
     if (BUSINESS) {
 
-        q = sb
+        result = await sb
             .from("businesses")
             .update(row)
             .eq("id", BUSINESS.id);
 
-    } else {
+    }
 
-        q = sb
+    else {
+
+        result = await sb
             .from("businesses")
             .insert(row);
 
     }
 
 
-    const { error } =
-        await q;
+    if (result.error) {
 
+        $("businessMsg").textContent =
+            "❌ " + result.error.message;
 
-    if (error) {
-
-        return $("businessMsg").textContent =
-            "❌ " + error.message;
+        return;
 
     }
 
 
     $("businessMsg").textContent =
-        "✅ Business profile saved successfully";
+        "✅ Business profile saved successfully!";
 
 
     await loadBusiness();
@@ -256,8 +374,10 @@ $("addProduct").onclick = async () => {
 
     if (!BUSINESS) {
 
-        return $("productMsg").textContent =
-            "⚠️ Save your business profile first";
+        $("productMsg").textContent =
+            "⚠️ Please save your business profile first.";
+
+        return;
 
     }
 
@@ -268,59 +388,64 @@ $("addProduct").onclick = async () => {
 
     if (!name) {
 
-        return $("productMsg").textContent =
-            "⚠️ Enter product name";
+        $("productMsg").textContent =
+            "⚠️ Please enter product name.";
+
+        return;
 
     }
 
 
-    const { error } =
-        await sb
-            .from("products")
-            .insert({
+    const { error } = await sb
+        .from("products")
+        .insert({
 
-                business_id:
-                    BUSINESS.id,
+            business_id:
+                BUSINESS.id,
 
-                name,
+            name: name,
 
-                price:
-                    Number($("pPrice").value) || 0,
+            price:
+                Number($("pPrice").value) || 0,
 
-                description:
-                    $("pDesc").value.trim(),
+            description:
+                $("pDesc").value.trim(),
 
-                image_url:
-                    $("pImage").value.trim(),
+            image_url:
+                $("pImage").value.trim(),
 
-                active: true
-
-            });
-
-
-    $("productMsg").textContent =
-        error
-            ? "❌ " + error.message
-            : "✅ Product added";
-
-
-    if (!error) {
-
-        [
-            "pName",
-            "pPrice",
-            "pDesc",
-            "pImage"
-        ].forEach(id => {
-
-            $(id).value = "";
+            active: true
 
         });
 
 
-        loadProducts();
+    if (error) {
+
+        $("productMsg").textContent =
+            "❌ " + error.message;
+
+        return;
 
     }
+
+
+    $("productMsg").textContent =
+        "✅ Product added successfully!";
+
+
+    [
+        "pName",
+        "pPrice",
+        "pDesc",
+        "pImage"
+    ].forEach(id => {
+
+        $(id).value = "";
+
+    });
+
+
+    await loadProducts();
 
 };
 
@@ -334,7 +459,7 @@ async function loadProducts() {
     if (!BUSINESS) {
 
         $("productList").innerHTML =
-            '<div class="empty">Save your business first</div>';
+            '<div class="empty">Save your business first.</div>';
 
         $("statProducts").textContent = "0";
 
@@ -343,14 +468,13 @@ async function loadProducts() {
     }
 
 
-    const { data, error } =
-        await sb
-            .from("products")
-            .select("*")
-            .eq("business_id", BUSINESS.id)
-            .order("created_at", {
-                ascending: false
-            });
+    const { data, error } = await sb
+        .from("products")
+        .select("*")
+        .eq("business_id", BUSINESS.id)
+        .order("created_at", {
+            ascending: false
+        });
 
 
     if (error) {
@@ -374,31 +498,19 @@ async function loadProducts() {
 
                     ${
                         p.image_url
-                            ? `
-                                <img
-                                    class="product-img"
+                            ? `<img class="product-img"
                                     src="${esc(p.image_url)}"
-                                    alt="${esc(p.name)}"
-                                >
-                              `
-                            : `
-                                <div class="product-img">
-                                    📦
-                                </div>
-                              `
+                                    alt="${esc(p.name)}">`
+                            : `<div class="product-img">📦</div>`
                     }
 
-                    <h3>
-                        ${esc(p.name)}
-                    </h3>
+                    <h3>${esc(p.name)}</h3>
 
                     <p class="muted">
                         ${esc(p.description || "")}
                     </p>
 
-                    <b>
-                        ₹${esc(p.price)}
-                    </b>
+                    <b>₹${esc(p.price)}</b>
 
 
                     <div class="item-actions">
@@ -417,9 +529,10 @@ async function loadProducts() {
             `)
             .join("")
 
+
         ||
 
-        '<div class="empty">No products yet</div>';
+        '<div class="empty">No products yet.</div>';
 
 }
 
@@ -433,21 +546,22 @@ window.delProduct = async id => {
     if (!confirm("Delete this product?")) return;
 
 
-    const { error } =
-        await sb
-            .from("products")
-            .delete()
-            .eq("id", id);
+    const { error } = await sb
+        .from("products")
+        .delete()
+        .eq("id", id);
 
 
     if (error) {
 
-        alert(error.message);
+        alert("❌ " + error.message);
+
+        return;
 
     }
 
 
-    loadProducts();
+    await loadProducts();
 
 };
 
@@ -460,8 +574,10 @@ $("addService").onclick = async () => {
 
     if (!BUSINESS) {
 
-        return $("serviceMsg").textContent =
-            "⚠️ Save your business profile first";
+        $("serviceMsg").textContent =
+            "⚠️ Please save your business profile first.";
+
+        return;
 
     }
 
@@ -472,55 +588,60 @@ $("addService").onclick = async () => {
 
     if (!name) {
 
-        return $("serviceMsg").textContent =
-            "⚠️ Enter service name";
+        $("serviceMsg").textContent =
+            "⚠️ Please enter service name.";
+
+        return;
 
     }
 
 
-    const { error } =
-        await sb
-            .from("services")
-            .insert({
+    const { error } = await sb
+        .from("services")
+        .insert({
 
-                business_id:
-                    BUSINESS.id,
+            business_id:
+                BUSINESS.id,
 
-                name,
+            name: name,
 
-                price:
-                    Number($("sPrice").value) || 0,
+            price:
+                Number($("sPrice").value) || 0,
 
-                description:
-                    $("sDesc").value.trim(),
+            description:
+                $("sDesc").value.trim(),
 
-                active: true
-
-            });
-
-
-    $("serviceMsg").textContent =
-        error
-            ? "❌ " + error.message
-            : "✅ Service added";
-
-
-    if (!error) {
-
-        [
-            "sName",
-            "sPrice",
-            "sDesc"
-        ].forEach(id => {
-
-            $(id).value = "";
+            active: true
 
         });
 
 
-        loadServices();
+    if (error) {
+
+        $("serviceMsg").textContent =
+            "❌ " + error.message;
+
+        return;
 
     }
+
+
+    $("serviceMsg").textContent =
+        "✅ Service added successfully!";
+
+
+    [
+        "sName",
+        "sPrice",
+        "sDesc"
+    ].forEach(id => {
+
+        $(id).value = "";
+
+    });
+
+
+    await loadServices();
 
 };
 
@@ -534,7 +655,7 @@ async function loadServices() {
     if (!BUSINESS) {
 
         $("serviceList").innerHTML =
-            '<div class="empty">Save your business first</div>';
+            '<div class="empty">Save your business first.</div>';
 
         $("statServices").textContent = "0";
 
@@ -543,14 +664,13 @@ async function loadServices() {
     }
 
 
-    const { data, error } =
-        await sb
-            .from("services")
-            .select("*")
-            .eq("business_id", BUSINESS.id)
-            .order("created_at", {
-                ascending: false
-            });
+    const { data, error } = await sb
+        .from("services")
+        .select("*")
+        .eq("business_id", BUSINESS.id)
+        .order("created_at", {
+            ascending: false
+        });
 
 
     if (error) {
@@ -576,17 +696,13 @@ async function loadServices() {
                         📅
                     </div>
 
-                    <h3>
-                        ${esc(s.name)}
-                    </h3>
+                    <h3>${esc(s.name)}</h3>
 
                     <p class="muted">
                         ${esc(s.description || "")}
                     </p>
 
-                    <b>
-                        ₹${esc(s.price)}
-                    </b>
+                    <b>₹${esc(s.price)}</b>
 
 
                     <div class="item-actions">
@@ -605,9 +721,10 @@ async function loadServices() {
             `)
             .join("")
 
+
         ||
 
-        '<div class="empty">No services yet</div>';
+        '<div class="empty">No services yet.</div>';
 
 }
 
@@ -621,27 +738,28 @@ window.delService = async id => {
     if (!confirm("Delete this service?")) return;
 
 
-    const { error } =
-        await sb
-            .from("services")
-            .delete()
-            .eq("id", id);
+    const { error } = await sb
+        .from("services")
+        .delete()
+        .eq("id", id);
 
 
     if (error) {
 
-        alert(error.message);
+        alert("❌ " + error.message);
+
+        return;
 
     }
 
 
-    loadServices();
+    await loadServices();
 
 };
 
 
 // ==========================================
-// LOAD CUSTOMER ORDERS & BOOKINGS
+// LOAD ORDERS & BOOKINGS
 // ==========================================
 
 async function loadRequests() {
@@ -649,7 +767,7 @@ async function loadRequests() {
     if (!BUSINESS) {
 
         $("requestList").innerHTML =
-            '<div class="empty">Save your business first</div>';
+            '<div class="empty">Save your business first.</div>';
 
         $("statRequests").textContent = "0";
 
@@ -658,36 +776,33 @@ async function loadRequests() {
     }
 
 
-    const { data, error } =
-        await sb
-            .from("requests")
-            .select("*")
-            .eq("business_id", BUSINESS.id)
-            .order("created_at", {
-                ascending: false
-            });
-
-
-    $("statRequests").textContent =
-        (data || []).length;
+    const { data, error } = await sb
+        .from("requests")
+        .select("*")
+        .eq("business_id", BUSINESS.id)
+        .order("created_at", {
+            ascending: false
+        });
 
 
     if (error) {
 
         $("requestList").innerHTML =
-            `<div class="empty">
-                ❌ ${esc(error.message)}
-            </div>`;
+            `<div class="empty">❌ ${esc(error.message)}</div>`;
 
         return;
 
     }
 
 
+    $("statRequests").textContent =
+        (data || []).length;
+
+
     if (!data || data.length === 0) {
 
         $("requestList").innerHTML =
-            '<div class="empty">No orders or bookings yet</div>';
+            '<div class="empty">No orders or bookings yet.</div>';
 
         return;
 
@@ -695,205 +810,9 @@ async function loadRequests() {
 
 
     $("requestList").innerHTML =
-        data
-            .map(r => {
+        data.map(r => {
 
-
-                // ==================================
-                // PRODUCT ORDER
-                // ==================================
-
-                if (r.type === "order") {
-
-                    return `
-
-                        <div class="request-card">
-
-                            <span class="status">
-                                ${esc(r.status)}
-                            </span>
-
-
-                            <h3>
-                                🛒 Product Order
-                            </h3>
-
-
-                            ${
-                                r.product_image
-                                    ? `
-                                        <img
-                                            src="${esc(r.product_image)}"
-                                            alt="${esc(r.item_name)}"
-                                            style="
-                                                width:100%;
-                                                max-height:220px;
-                                                object-fit:cover;
-                                                border-radius:10px;
-                                                margin:10px 0;
-                                            "
-                                        >
-                                      `
-                                    : ""
-                            }
-
-
-                            <h3>
-                                📦 ${esc(r.item_name)}
-                            </h3>
-
-
-                            ${
-                                r.product_description
-                                    ? `
-                                        <p class="muted">
-                                            ${esc(r.product_description)}
-                                        </p>
-                                      `
-                                    : ""
-                            }
-
-
-                            <hr>
-
-
-                            <p>
-
-                                💰 <b>Product Price:</b>
-                                ₹${esc(r.product_price || 0)}
-
-                                <br><br>
-
-                                🔢 <b>Quantity:</b>
-                                ${esc(r.quantity || 1)}
-
-                                <br><br>
-
-                                💵 <b>Total Amount:</b>
-                                ₹${esc(r.total_amount || 0)}
-
-                            </p>
-
-
-                            <hr>
-
-
-                            <h3>
-                                👤 Customer Details
-                            </h3>
-
-
-                            <p>
-
-                                👤 <b>Name:</b>
-                                ${esc(r.customer_name)}
-
-                                <br>
-
-                                📞 <b>Phone:</b>
-                                ${esc(r.customer_phone || "")}
-
-                            </p>
-
-
-                            <h3>
-                                🏠 Delivery Address
-                            </h3>
-
-
-                            <p>
-
-                                ${esc(r.delivery_address || "Address not provided")}
-
-                                <br>
-
-                                🏙️
-                                ${esc(r.city || "")}
-
-                                <br>
-
-                                📍
-                                ${esc(r.state || "")}
-
-                                <br>
-
-                                📮 Pincode:
-                                ${esc(r.pincode || "")}
-
-                            </p>
-
-
-                            ${
-                                r.note
-                                    ? `
-                                        <div class="notice">
-
-                                            📝 <b>Customer Note:</b>
-
-                                            <br>
-
-                                            ${esc(r.note)}
-
-                                        </div>
-                                      `
-                                    : ""
-                            }
-
-
-                            <div class="item-actions">
-
-                                <button
-                                    class="btn btn-green btn-sm"
-                                    onclick="setStatus('${r.id}','accepted')"
-                                >
-                                    Accept
-                                </button>
-
-
-                                <button
-                                    class="btn btn-red btn-sm"
-                                    onclick="setStatus('${r.id}','rejected')"
-                                >
-                                    Reject
-                                </button>
-
-
-                                <button
-                                    class="btn btn-blue btn-sm"
-                                    onclick="setStatus('${r.id}','processing')"
-                                >
-                                    Processing
-                                </button>
-
-
-                                <button
-                                    class="btn btn-light btn-sm"
-                                    onclick="setStatus('${r.id}','out_for_delivery')"
-                                >
-                                    Out for Delivery
-                                </button>
-
-
-                                <button
-                                    class="btn btn-dark btn-sm"
-                                    onclick="setStatus('${r.id}','delivered')"
-                                >
-                                    Delivered
-                                </button>
-
-                            </div>
-
-
-                        </div>
-
-                    `;
-
-                }
-
-
-                // ==================================
-                // SERVICE BOOKING
-                // ==================================
+            if (r.type === "order") {
 
                 return `
 
@@ -905,38 +824,121 @@ async function loadRequests() {
 
 
                         <h3>
-                            📅 Service Booking
+                            🛒 Product Order
                         </h3>
 
 
+                        ${
+                            r.product_image
+                                ? `<img
+                                    src="${esc(r.product_image)}"
+                                    alt="${esc(r.item_name)}"
+                                    style="
+                                        width:100%;
+                                        max-height:220px;
+                                        object-fit:cover;
+                                        border-radius:10px;
+                                        margin:10px 0;
+                                    ">`
+                                : ""
+                        }
+
+
                         <h3>
-                            ${esc(r.item_name)}
+                            📦 ${esc(r.item_name)}
+                        </h3>
+
+
+                        ${
+                            r.product_description
+                                ? `<p class="muted">
+                                    ${esc(r.product_description)}
+                                   </p>`
+                                : ""
+                        }
+
+
+                        <hr>
+
+
+                        <p>
+
+                            💰 <b>Product Price:</b>
+                            ₹${esc(r.product_price || 0)}
+
+                            <br><br>
+
+                            🔢 <b>Quantity:</b>
+                            ${esc(r.quantity || 1)}
+
+                            <br><br>
+
+                            💵 <b>Total Amount:</b>
+                            ₹${esc(r.total_amount || 0)}
+
+                        </p>
+
+
+                        <hr>
+
+
+                        <h3>
+                            👤 Customer Details
                         </h3>
 
 
                         <p>
 
-                            👤
+                            👤 <b>Name:</b>
                             ${esc(r.customer_name)}
 
                             <br>
 
-                            📞
+                            📞 <b>Phone:</b>
                             ${esc(r.customer_phone || "")}
+
+                        </p>
+
+
+                        <h3>
+                            🏠 Delivery Address
+                        </h3>
+
+
+                        <p>
+
+                            ${esc(
+                                r.delivery_address ||
+                                "Address not provided"
+                            )}
+
+                            <br>
+
+                            🏙️ ${esc(r.city || "")}
+
+                            <br>
+
+                            📍 ${esc(r.state || "")}
+
+                            <br>
+
+                            📮 Pincode:
+                            ${esc(r.pincode || "")}
 
                         </p>
 
 
                         ${
                             r.note
-                                ? `
-                                    <p class="muted">
+                                ? `<div class="notice">
 
-                                        📝
-                                        ${esc(r.note)}
+                                    📝 <b>Customer Note:</b>
 
-                                    </p>
-                                  `
+                                    <br>
+
+                                    ${esc(r.note)}
+
+                                   </div>`
                                 : ""
                         }
 
@@ -968,21 +970,110 @@ async function loadRequests() {
 
 
                             <button
-                                class="btn btn-green btn-sm"
-                                onclick="setStatus('${r.id}','completed')"
+                                class="btn btn-light btn-sm"
+                                onclick="setStatus('${r.id}','out_for_delivery')"
                             >
-                                Completed
+                                Out for Delivery
+                            </button>
+
+
+                            <button
+                                class="btn btn-dark btn-sm"
+                                onclick="setStatus('${r.id}','delivered')"
+                            >
+                                Delivered
                             </button>
 
                         </div>
-
 
                     </div>
 
                 `;
 
-            })
-            .join("");
+            }
+
+
+            // SERVICE BOOKING
+
+            return `
+
+                <div class="request-card">
+
+                    <span class="status">
+                        ${esc(r.status)}
+                    </span>
+
+
+                    <h3>
+                        📅 Service Booking
+                    </h3>
+
+
+                    <h3>
+                        ${esc(r.item_name)}
+                    </h3>
+
+
+                    <p>
+
+                        👤 ${esc(r.customer_name)}
+
+                        <br>
+
+                        📞 ${esc(r.customer_phone || "")}
+
+                    </p>
+
+
+                    ${
+                        r.note
+                            ? `<p class="muted">
+                                📝 ${esc(r.note)}
+                               </p>`
+                            : ""
+                    }
+
+
+                    <div class="item-actions">
+
+                        <button
+                            class="btn btn-green btn-sm"
+                            onclick="setStatus('${r.id}','accepted')"
+                        >
+                            Accept
+                        </button>
+
+
+                        <button
+                            class="btn btn-red btn-sm"
+                            onclick="setStatus('${r.id}','rejected')"
+                        >
+                            Reject
+                        </button>
+
+
+                        <button
+                            class="btn btn-blue btn-sm"
+                            onclick="setStatus('${r.id}','processing')"
+                        >
+                            Processing
+                        </button>
+
+
+                        <button
+                            class="btn btn-green btn-sm"
+                            onclick="setStatus('${r.id}','completed')"
+                        >
+                            Completed
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }).join("");
 
 }
 
@@ -993,20 +1084,15 @@ async function loadRequests() {
 
 window.setStatus = async (id, status) => {
 
-    const { error } =
-        await sb
-            .from("requests")
-            .update({
-                status
-            })
-            .eq("id", id);
+    const { error } = await sb
+        .from("requests")
+        .update({ status })
+        .eq("id", id);
 
 
     if (error) {
 
-        alert(
-            "❌ " + error.message
-        );
+        alert("❌ " + error.message);
 
         return;
 
@@ -1032,7 +1118,7 @@ $("logoutBtn").onclick = async () => {
 
 
 // ==========================================
-// START APP
+// START
 // ==========================================
 
 init();
